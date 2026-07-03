@@ -25,7 +25,9 @@ def get_mads_limited_brands(CP: structs.CarParams, CP_SP: structs.CarParamsSP) -
   if CP.brand == 'rivian':
     return True
   if CP.brand == 'tesla':
-    return not CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS
+    # BUTTON_CANCELS provides a consistent lateral disengage path (cruise button cancel),
+    # so full MADS steering modes are allowed even without the vehicle bus 3-finger button
+    return not CP_SP.flags & (TeslaFlagsSP.HAS_VEHICLE_BUS | TeslaFlagsSP.BUTTON_CANCELS)
 
   return False
 
@@ -48,6 +50,9 @@ def set_alternative_experience(CP: structs.CarParams, CP_SP: structs.CarParamsSP
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_DISENGAGE_LATERAL_ON_BRAKE
     elif steering_mode == MadsSteeringModeOnBrake.PAUSE:
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_PAUSE_LATERAL_ON_BRAKE
+
+  if CP.brand == 'tesla' and CP_SP.flags & TeslaFlagsSP.STEER_OVERRIDE_PAUSES:
+    CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_STEER_OVERRIDE_PAUSE_LATERAL
 
 
 def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params):

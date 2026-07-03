@@ -46,6 +46,9 @@ macros:
               - {type: capability, field: brand, equals: tesla}
               - type: not
                 condition: {type: capability, field: tesla_has_vehicle_bus, equals: true}
+              # TeslaButtonCancels provides a consistent lateral disengage path, lifting the limited-MADS restriction
+              - type: not
+                condition: {type: param, key: TeslaButtonCancels, equals: true}
 
   # Inverse of mads_full_platforms: present only on the limited platforms.
   # Useful for "show this only on rivian/tesla-no-bus" toggles.
@@ -58,6 +61,8 @@ macros:
             - {type: capability, field: brand, equals: tesla}
             - type: not
               condition: {type: capability, field: tesla_has_vehicle_bus, equals: true}
+            - type: not
+              condition: {type: param, key: TeslaButtonCancels, equals: true}
 
   # Hide on sunnypilot release branches (is_release is hardcoded False everywhere; is_sp_release is the active gate).
   release_branches_hide:

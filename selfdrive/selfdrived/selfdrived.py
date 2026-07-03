@@ -24,6 +24,7 @@ from openpilot.selfdrive.selfdrived.alertmanager import AlertManager, set_offroa
 from openpilot.system.version import get_build_metadata
 from openpilot.system.hardware import HARDWARE
 
+from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 from openpilot.sunnypilot import get_sanitize_int_param
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
@@ -74,6 +75,9 @@ class SelfdriveD(CruiseHelper):
       self.CP_SP = CP_SP
 
     self.car_events = CarSpecificEvents(self.CP)
+
+    # sunnypilot: Tesla steering override pause
+    self.tesla_steer_override_pauses = self.CP.brand == 'tesla' and bool(self.CP_SP.flags & TeslaFlagsSP.STEER_OVERRIDE_PAUSES)
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -247,6 +251,11 @@ class SelfdriveD(CruiseHelper):
     if CS.canValid:
       car_events = self.car_events.update(CS, self.CS_prev, self.sm['carControl']).to_msg()
       self.events.add_from_msg(car_events)
+
+      # sunnypilot: Tesla steering override pause - a hard override pauses lateral (handled by
+      # MADS + carcontroller) instead of disengaging; longitudinal keeps running like stock TACC
+      if self.tesla_steer_override_pauses:
+        self.events.remove(EventName.steerDisengage)
 
       car_events_sp = self.car_events_sp.update(CS, self.events).to_msg()
       self.events_sp.add_from_msg(car_events_sp)

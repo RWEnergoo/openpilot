@@ -9,6 +9,7 @@ from cereal import log, custom
 
 from opendbc.car import structs
 from opendbc.car.hyundai.values import HyundaiFlags
+from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
 from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param, MADS_NO_ACC_MAIN_BUTTON
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
@@ -45,8 +46,12 @@ class ModularAssistiveDrivingSystem:
     if self.CP.brand == "hyundai":
       if self.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
         self.allow_always = True
+    self.tesla_button_cancels = False
+    self.tesla_steer_override_pauses = False
     if self.CP.brand == "tesla":
       self.allow_always = True
+      self.tesla_button_cancels = bool(self.CP_SP.flags & TeslaFlagsSP.BUTTON_CANCELS)
+      self.tesla_steer_override_pauses = bool(self.CP_SP.flags & TeslaFlagsSP.STEER_OVERRIDE_PAUSES)
 
     if self.CP.brand in MADS_NO_ACC_MAIN_BUTTON:
       self.no_main_cruise = True
@@ -70,6 +75,9 @@ class ModularAssistiveDrivingSystem:
 
   def should_silent_lkas_enable(self, CS: structs.CarState) -> bool:
     if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE and self.pedal_pressed_non_gas_pressed(CS):
+      return False
+
+    if self.tesla_steer_override_pauses and CS.steeringDisengage:
       return False
 
     if self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
@@ -142,6 +150,11 @@ class ModularAssistiveDrivingSystem:
         if self.pedal_pressed_non_gas_pressed(CS):
           self.transition_paused_state()
 
+      # Tesla steering override pause: hard override pauses MADS lateral, firmware
+      # re-allows on override release and carcontroller delays the actual resume
+      if self.tesla_steer_override_pauses and CS.steeringDisengage:
+        self.transition_paused_state()
+
       self.events.remove(EventName.preEnableStandstill)
       self.events.remove(EventName.belowEngageSpeed)
       self.events.remove(EventName.speedTooLow)
@@ -169,11 +182,15 @@ class ModularAssistiveDrivingSystem:
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
-        if not self.selfdrive.enabled and self.selfdrive.enabled_prev:
+        if self.tesla_button_cancels and self.enabled:
+          # Tesla BUTTON_CANCELS: the cruise button press (PRE_CANCEL) stops everything,
+          # including MADS lateral, so the button acts as a full on/off toggle
+          self.events_sp.add(EventNameSP.lkasDisable)
+        elif not self.selfdrive.enabled and self.selfdrive.enabled_prev:
           self.events_sp.add(EventNameSP.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
         if self.enabled:
-          if self.selfdrive.enabled:
+          if self.selfdrive.enabled and not self.tesla_button_cancels:
             self.events_sp.add(EventNameSP.manualSteeringRequired)
           else:
             self.events_sp.add(EventNameSP.lkasDisable)

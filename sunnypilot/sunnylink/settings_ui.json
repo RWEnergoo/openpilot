@@ -72,6 +72,14 @@
                                   "field": "tesla_has_vehicle_bus",
                                   "equals": true
                                 }
+                              },
+                              {
+                                "type": "not",
+                                "condition": {
+                                  "type": "param",
+                                  "key": "TeslaButtonCancels",
+                                  "equals": true
+                                }
                               }
                             ]
                           }
@@ -112,6 +120,14 @@
                                 "condition": {
                                   "type": "capability",
                                   "field": "tesla_has_vehicle_bus",
+                                  "equals": true
+                                }
+                              },
+                              {
+                                "type": "not",
+                                "condition": {
+                                  "type": "param",
+                                  "key": "TeslaButtonCancels",
                                   "equals": true
                                 }
                               }
@@ -157,6 +173,14 @@
                                       "field": "tesla_has_vehicle_bus",
                                       "equals": true
                                     }
+                                  },
+                                  {
+                                    "type": "not",
+                                    "condition": {
+                                      "type": "param",
+                                      "key": "TeslaButtonCancels",
+                                      "equals": true
+                                    }
                                   }
                                 ]
                               }
@@ -192,6 +216,14 @@
                                     "condition": {
                                       "type": "capability",
                                       "field": "tesla_has_vehicle_bus",
+                                      "equals": true
+                                    }
+                                  },
+                                  {
+                                    "type": "not",
+                                    "condition": {
+                                      "type": "param",
+                                      "key": "TeslaButtonCancels",
                                       "equals": true
                                     }
                                   }
@@ -391,7 +423,7 @@
                   "min": 0.1,
                   "max": 5.0,
                   "step": 0.1,
-                  "unit": "m/s\u00b2",
+                  "unit": "m/s\u00c2\u00b2",
                   "enablement": [
                     {
                       "type": "param",
@@ -2159,6 +2191,62 @@
           "enablement": [
             {
               "type": "offroad_only"
+            }
+          ]
+        },
+        {
+          "key": "TeslaButtonCancels",
+          "widget": "toggle",
+          "title": "Cruise Button Toggles Engagement (Alpha)",
+          "description": "Pressing the cruise/engage button while sunnypilot is engaged disengages it, making the button a full on/off toggle. Without this, the button press is overridden while sunnypilot longitudinal control is active. This is an alpha feature. Use at your own risk.",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            }
+          ]
+        },
+        {
+          "key": "TeslaSteerOverridePauses",
+          "widget": "toggle",
+          "title": "Steering Override Pauses Steering (Alpha)",
+          "description": "A hard steering override pauses lane centering instead of disengaging sunnypilot. Longitudinal control keeps running, like factory TACC. Steering automatically resumes after you release the wheel and the requested angle is close to your current angle. This is an alpha feature. Use at your own risk.",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            }
+          ]
+        },
+        {
+          "key": "TeslaSteerOverrideResumeDelay",
+          "widget": "multiple_button",
+          "title": "Steering Resume Delay",
+          "description": "How long to wait after releasing a steering override before lane centering resumes.",
+          "options": [
+            {
+              "value": 0,
+              "label": "0.5s"
+            },
+            {
+              "value": 1,
+              "label": "1s"
+            },
+            {
+              "value": 2,
+              "label": "1.5s"
+            },
+            {
+              "value": 3,
+              "label": "2s"
+            }
+          ],
+          "enablement": [
+            {
+              "type": "offroad_only"
+            },
+            {
+              "type": "param",
+              "key": "TeslaSteerOverridePauses",
+              "equals": true
             }
           ]
         }
