@@ -74,6 +74,10 @@ sections:
     options:
     - value: 0
       label: Instant
+      enablement:
+      - type: capability
+        field: tesla_has_vehicle_bus
+        equals: true
     - value: 1
       label: 0.5s
     - value: 2
@@ -85,6 +89,16 @@ sections:
     - type: param
       key: TeslaButtonCancels
       equals: true
+  - key: TeslaSoftBrakeAfterGas
+    widget: toggle
+    title: Soft Braking After Accelerator Override (Alpha)
+    description: After releasing the accelerator during an override, braking ramps back in gently
+      instead of snapping to the planned deceleration, similar to factory TACC behavior. Safety
+      rules forbid braking while the accelerator is pressed, so the softening applies from the
+      moment of release. This is an alpha feature. Use at your own risk.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - $ref: '#/macros/longitudinal'
   - key: TeslaSteerOverridePauses
     widget: toggle
     title: Steering Override Pauses Steering (Alpha)
@@ -97,13 +111,15 @@ sections:
     widget: multiple_button
     title: Steering Resume Delay
     description: How long to wait after releasing a steering override before lane centering resumes.
+      Steering only resumes once your grip is relaxed and the wheel is close to the requested angle,
+      so 0.25s hands back control near-immediately.
     options:
     - value: 0
-      label: 0.5s
+      label: 0.25s
     - value: 1
-      label: 1s
+      label: 0.5s
     - value: 2
-      label: 1.5s
+      label: 1s
     - value: 3
       label: 2s
     enablement:
