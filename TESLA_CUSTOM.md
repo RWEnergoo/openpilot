@@ -12,18 +12,26 @@ Stock behavior: with sunnypilot longitudinal (alpha) engaged, pressing the cruis
 nothing — the DI briefly reports `DI_cruiseState = PRE_CANCEL`, but both sunnypilot and the panda
 count PRE_CANCEL as "engaged" and sunnypilot keeps commanding `ACC_ON` at 25 Hz, swallowing the press.
 
-With this toggle: the PRE_CANCEL rising edge is surfaced as a cancel button event
+With this toggle, two triggers surface a cancel button event
 (`opendbc/sunnypilot/car/tesla/carstate_ext.py`), which disengages openpilot longitudinal
-(`buttonCancel` → `USER_DISABLE`) **and** MADS lateral (`sunnypilot/mads/mads.py` cancel branch).
-The button becomes a full on/off toggle.
+(`buttonCancel` → `USER_DISABLE`) **and** MADS lateral (`sunnypilot/mads/mads.py` cancel branch):
+1. `UI_warning.scrollWheelPressed` rising edge while engaged for >0.5 s (the scroll-wheel click is
+   normally handled by the AP computer, which openpilot replaces, so the press otherwise goes
+   nowhere). Note: the signal covers scroll-wheel clicks generally, so a left-wheel (volume/mute)
+   click while engaged also cancels.
+2. `DI_cruiseState = PRE_CANCEL` rising edge (kept as a complementary path).
+
+The button becomes a full on/off toggle. The 0.5 s guard keeps the engaging click itself from
+immediately canceling.
 
 Side effect (intentional): enabling this lifts the "limited MADS" restriction for Tesla without the
 vehicle bus (`sunnypilot/mads/helpers.py`), unlocking **Steering Mode on Brake Pedal**
 (Remain Active / Pause / Disengage) — the button now provides a consistent lateral disengage path.
 
-> ⚠️ Unverified assumption: the scroll-wheel press surfaces as `PRE_CANCEL` on the Highland.
-> If the button still doesn't disengage, capture a drive log (comma connect → Cabana) of a button
-> press while engaged, and adjust the trigger signal in `carstate_ext.py`.
+> History: v1 used only PRE_CANCEL detection — confirmed NOT working on the Highland (2026-07-03
+> road test): the button press never reaches the DI as a cancel. v2 added the direct
+> `scrollWheelPressed` trigger. If this also fails, capture a drive log (comma connect → Cabana)
+> of a button press while engaged and check which signal changes.
 
 ### 2. Steering Override Pauses Steering (`TeslaSteerOverridePauses` + `TeslaSteerOverrideResumeDelay`)
 Stock behavior: a hard steering override (`EPAS3S_handsOnLevel >= 3`, common below the ~23 km/h EPS
