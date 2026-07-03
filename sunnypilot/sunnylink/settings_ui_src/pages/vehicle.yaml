@@ -92,11 +92,11 @@ sections:
   - key: TeslaSoftGasThreshold
     widget: toggle
     title: Light Accelerator Keeps Braking (Alpha)
-    description: 'A lightly feathered accelerator (10% or less) does not count as an override, so
-      sunnypilot can keep braking gently while your foot rests on the pedal, like factory TACC.
-      WARNING: with this enabled the system may brake while you are lightly pressing the
-      accelerator. Above 10% pedal, normal override behavior applies. This is an alpha feature.
-      Use at your own risk.'
+    description: 'A lightly feathered accelerator (10% or less) does not count as an override, and
+      braking force blends down with pedal position like factory TACC: 5% pedal halves the planned
+      braking, 10% removes it. WARNING: with this enabled the system may brake while you are
+      lightly pressing the accelerator. Above 10% pedal, normal override behavior applies. This is
+      an alpha feature. Use at your own risk.'
     enablement:
     - $ref: '#/macros/offroad'
     - $ref: '#/macros/longitudinal'
