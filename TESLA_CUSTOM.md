@@ -31,15 +31,18 @@ Side effect (intentional): enabling this lifts the "limited MADS" restriction fo
 vehicle bus (`sunnypilot/mads/helpers.py`), unlocking **Steering Mode on Brake Pedal**
 (Remain Active / Pause / Disengage) — the button now provides a consistent lateral disengage path.
 
-> History (road tests 2026-07-03):
+> History (road + protocol tests 2026-07-03):
 > v1: PRE_CANCEL detection only — button press never reaches the DI (the AP computer that normally
 > translates it is replaced by openpilot). No disengage.
-> v2: cancel on scrollWheelPressed rising edge — worked, but ALSO fired on volume clicks and scroll
-> ticks of both wheels, and releasing the button re-engaged everything (car treats the click
-> completion as engage). Dangerous.
-> v3 (current): 1 s hold-to-cancel + 2 s blockPcmEnable anti-bounce window.
-> A dedicated right-wheel-click signal would be cleaner — needs a Cabana log to identify; the
-> generic scrollWheelPressed hold works meanwhile.
+> v2: cancel on scrollWheelPressed rising edge — worked, but that bit fires on BOTH wheels for
+> clicks, scroll ticks and holds (labeled protocol test), so volume clicks and scrolling canceled
+> too, and rapid re-clicks re-engaged (toggle ping-pong). Dangerous.
+> v3: hold-to-cancel + causal re-engage block (press must be fully released and a fresh press
+> started before PCM may re-engage).
+> v4 (current): right-wheel-only trigger via VCLEFT_switchStatus.swcRightPressed on the VEHICLE
+> bus (multiplexed; read index-1 frames only) — scroll ticks, volume clicks and the left
+> chill-mode hold can never cancel, and Instant hold duration is safe. Cars without the vehicle
+> bus fall back to the shared bit with Instant clamped to 0.5 s.
 
 ### 2. Steering Override Pauses Steering (`TeslaSteerOverridePauses` + `TeslaSteerOverrideResumeDelay`)
 Stock behavior: a hard steering override (`EPAS3S_handsOnLevel >= 3`, common below the ~23 km/h EPS
