@@ -12,26 +12,32 @@ Stock behavior: with sunnypilot longitudinal (alpha) engaged, pressing the cruis
 nothing — the DI briefly reports `DI_cruiseState = PRE_CANCEL`, but both sunnypilot and the panda
 count PRE_CANCEL as "engaged" and sunnypilot keeps commanding `ACC_ON` at 25 Hz, swallowing the press.
 
-With this toggle, two triggers surface a cancel button event
-(`opendbc/sunnypilot/car/tesla/carstate_ext.py`), which disengages openpilot longitudinal
-(`buttonCancel` → `USER_DISABLE`) **and** MADS lateral (`sunnypilot/mads/mads.py` cancel branch):
-1. `UI_warning.scrollWheelPressed` rising edge while engaged for >0.5 s (the scroll-wheel click is
-   normally handled by the AP computer, which openpilot replaces, so the press otherwise goes
-   nowhere). Note: the signal covers scroll-wheel clicks generally, so a left-wheel (volume/mute)
-   click while engaged also cancels.
-2. `DI_cruiseState = PRE_CANCEL` rising edge (kept as a complementary path).
-
-The button becomes a full on/off toggle. The 0.5 s guard keeps the engaging click itself from
-immediately canceling.
+With this toggle: **hold either scroll wheel pressed for 1 second** while engaged to disengage
+everything (openpilot longitudinal via `buttonCancel` → `USER_DISABLE`, and MADS lateral via the
+`sunnypilot/mads/mads.py` cancel branch). Implemented in
+`opendbc/sunnypilot/car/tesla/carstate_ext.py`:
+- Trigger: `UI_warning.scrollWheelPressed` held for `CANCEL_HOLD_FRAMES` (1 s). Road testing showed
+  this signal also fires on scroll ticks and on the left (volume) wheel click, so a short click or
+  scroll does nothing — only a deliberate hold cancels. (`DI_cruiseState = PRE_CANCEL` kept as a
+  complementary trigger.)
+- Anti-bounce: the car itself treats the completed click (on release) as an engage command, which
+  would re-engage everything immediately (observed on the road — dangerous). After a cancel,
+  `blockPcmEnable` suppresses PCM re-engagement for 2 s from release; openpilot's cancel spam then
+  turns the car's TACC back off. Re-engage by clicking again after ~2 s.
 
 Side effect (intentional): enabling this lifts the "limited MADS" restriction for Tesla without the
 vehicle bus (`sunnypilot/mads/helpers.py`), unlocking **Steering Mode on Brake Pedal**
 (Remain Active / Pause / Disengage) — the button now provides a consistent lateral disengage path.
 
-> History: v1 used only PRE_CANCEL detection — confirmed NOT working on the Highland (2026-07-03
-> road test): the button press never reaches the DI as a cancel. v2 added the direct
-> `scrollWheelPressed` trigger. If this also fails, capture a drive log (comma connect → Cabana)
-> of a button press while engaged and check which signal changes.
+> History (road tests 2026-07-03):
+> v1: PRE_CANCEL detection only — button press never reaches the DI (the AP computer that normally
+> translates it is replaced by openpilot). No disengage.
+> v2: cancel on scrollWheelPressed rising edge — worked, but ALSO fired on volume clicks and scroll
+> ticks of both wheels, and releasing the button re-engaged everything (car treats the click
+> completion as engage). Dangerous.
+> v3 (current): 1 s hold-to-cancel + 2 s blockPcmEnable anti-bounce window.
+> A dedicated right-wheel-click signal would be cleaner — needs a Cabana log to identify; the
+> generic scrollWheelPressed hold works meanwhile.
 
 ### 2. Steering Override Pauses Steering (`TeslaSteerOverridePauses` + `TeslaSteerOverrideResumeDelay`)
 Stock behavior: a hard steering override (`EPAS3S_handsOnLevel >= 3`, common below the ~23 km/h EPS
