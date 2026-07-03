@@ -2209,19 +2209,19 @@
           "key": "TeslaButtonCancelHoldDuration",
           "widget": "multiple_button",
           "title": "Disengage Hold Duration",
-          "description": "How long to hold the scroll wheel pressed to disengage. Scroll ticks and short clicks (including the volume wheel) can never trigger this; a long hold on the left wheel (chill mode gesture) will also disengage.",
+          "description": "How long to hold the right scroll wheel pressed to disengage. With the vehicle bus harness, only the right wheel can trigger this (scrolling, volume clicks and the left chill-mode hold are ignored) and Instant is safe. Without it, Instant acts as 0.5s and a long left-wheel hold also disengages.",
           "options": [
             {
               "value": 0,
-              "label": "0.5s"
+              "label": "Instant"
             },
             {
               "value": 1,
-              "label": "1s"
+              "label": "0.5s"
             },
             {
               "value": 2,
-              "label": "1.5s"
+              "label": "1s"
             },
             {
               "value": 3,
