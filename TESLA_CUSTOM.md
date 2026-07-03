@@ -12,7 +12,8 @@ Stock behavior: with sunnypilot longitudinal (alpha) engaged, pressing the cruis
 nothing — the DI briefly reports `DI_cruiseState = PRE_CANCEL`, but both sunnypilot and the panda
 count PRE_CANCEL as "engaged" and sunnypilot keeps commanding `ACC_ON` at 25 Hz, swallowing the press.
 
-With this toggle: **hold either scroll wheel pressed for 1 second** while engaged to disengage
+With this toggle: **hold either scroll wheel pressed** (0.5–2 s, configurable via
+`TeslaButtonCancelHoldDuration`, default 1 s) while engaged to disengage
 everything (openpilot longitudinal via `buttonCancel` → `USER_DISABLE`, and MADS lateral via the
 `sunnypilot/mads/mads.py` cancel branch). Implemented in
 `opendbc/sunnypilot/car/tesla/carstate_ext.py`:

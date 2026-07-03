@@ -2206,6 +2206,40 @@
           ]
         },
         {
+          "key": "TeslaButtonCancelHoldDuration",
+          "widget": "multiple_button",
+          "title": "Disengage Hold Duration",
+          "description": "How long to hold the scroll wheel pressed to disengage.",
+          "options": [
+            {
+              "value": 0,
+              "label": "0.5s"
+            },
+            {
+              "value": 1,
+              "label": "1s"
+            },
+            {
+              "value": 2,
+              "label": "1.5s"
+            },
+            {
+              "value": 3,
+              "label": "2s"
+            }
+          ],
+          "enablement": [
+            {
+              "type": "offroad_only"
+            },
+            {
+              "type": "param",
+              "key": "TeslaButtonCancels",
+              "equals": true
+            }
+          ]
+        },
+        {
           "key": "TeslaSteerOverridePauses",
           "widget": "toggle",
           "title": "Steering Override Pauses Steering (Alpha)",
