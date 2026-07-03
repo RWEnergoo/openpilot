@@ -2263,22 +2263,6 @@
           ]
         },
         {
-          "key": "TeslaSoftBrakeAfterGas",
-          "widget": "toggle",
-          "title": "Soft Braking After Accelerator Override (Alpha)",
-          "description": "After releasing the accelerator during an override, braking ramps back in gently instead of snapping to the planned deceleration, similar to factory TACC behavior. Safety rules forbid braking while the accelerator is pressed, so the softening applies from the moment of release. This is an alpha feature. Use at your own risk.",
-          "enablement": [
-            {
-              "type": "offroad_only"
-            },
-            {
-              "type": "capability",
-              "field": "has_longitudinal_control",
-              "equals": true
-            }
-          ]
-        },
-        {
           "key": "TeslaSteerOverridePauses",
           "widget": "toggle",
           "title": "Steering Override Pauses Steering (Alpha)",
