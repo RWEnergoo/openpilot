@@ -67,14 +67,15 @@ sections:
   - key: TeslaButtonCancelHoldDuration
     widget: multiple_button
     title: Disengage Hold Duration
-    description: How long to hold the scroll wheel pressed to disengage.
+    description: How long to hold the scroll wheel pressed to disengage. Instant makes a plain
+      click toggle off, but a volume-wheel click while engaged will then also disengage.
     options:
     - value: 0
-      label: 0.5s
+      label: Instant
     - value: 1
-      label: 1s
+      label: 0.5s
     - value: 2
-      label: 1.5s
+      label: 1s
     - value: 3
       label: 2s
     enablement:
