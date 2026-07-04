@@ -2206,6 +2206,22 @@
           ]
         },
         {
+          "key": "TeslaSimVehicleBusLoss",
+          "widget": "toggle",
+          "title": "Simulate Vehicle Bus Loss (Dev)",
+          "description": "Test toggle: starves the button trigger's vehicle bus reads to simulate a cable break, forcing the fallback (hold either wheel 0.5s to disengage while engaged; the 1.5s all-off hold keeps working). For validating the failover path without pulling connectors.",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            },
+            {
+              "type": "param",
+              "key": "ShowAdvancedControls",
+              "equals": true
+            }
+          ]
+        },
+        {
           "key": "TeslaSoftGasThreshold",
           "widget": "toggle",
           "title": "Light Accelerator Keeps Braking (Beta)",

@@ -64,6 +64,15 @@ sections:
       steering-only mode. This is an alpha feature. Use at your own risk.
     enablement:
     - $ref: '#/macros/offroad'
+  - key: TeslaSimVehicleBusLoss
+    widget: toggle
+    title: Simulate Vehicle Bus Loss (Dev)
+    description: 'Test toggle: starves the button trigger''s vehicle bus reads to simulate a cable
+      break, forcing the fallback (hold either wheel 0.5s to disengage while engaged; the 1.5s
+      all-off hold keeps working). For validating the failover path without pulling connectors.'
+    enablement:
+    - $ref: '#/macros/offroad'
+    - $ref: '#/macros/advanced_only'
   - key: TeslaSoftGasThreshold
     widget: toggle
     title: Light Accelerator Keeps Braking (Beta)
