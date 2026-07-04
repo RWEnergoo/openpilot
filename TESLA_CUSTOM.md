@@ -81,8 +81,17 @@ New params: `TeslaButtonCancels`, `TeslaSteerOverridePauses`, `TeslaSteerOverrid
 ## Testing
 - opendbc safety suite + mutation tests: **green** (CI via https://github.com/RWEnergoo/opendbc/pull/1,
   new tests in `opendbc/safety/tests/test_tesla.py` and `opendbc/safety/tests/mads_common.py`).
-- On-car test order: (1) `TeslaButtonCancels` alone — validates the PRE_CANCEL assumption;
-  (2) Steering Mode on Brake Pedal = Remain Active; (3) `TeslaSteerOverridePauses`.
+
+Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
+
+| Feature | Status |
+|---|---|
+| Button toggle, instant click (vehicle bus path) | ✅ validated on the road (route 0000000e), incl. rearm block |
+| Silent rearm window (no chime, ff16f98) | 🔜 pending validation ride |
+| Button toggle **0.5 s hold fallback (no vehicle bus)** | ❌ **UNTESTED — do not assume it works.** This car always takes the vehicle-bus path; testing requires a temporary commit that ignores HAS_VEHICLE_BUS to force the fallback. Planned after everything else is validated. |
+| Steering Mode on Brake Pedal = Remain Active | 🔜 untested |
+| Steering override pause + 0.25 s resume | 🔜 untested |
+| Soft gas threshold + proportional brake blend | 🔜 untested |
 
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
