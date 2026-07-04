@@ -67,10 +67,8 @@ sections:
   - key: TeslaButtonCancelHoldDuration
     widget: multiple_button
     title: Disengage Hold Duration
-    description: How long to hold the right scroll wheel pressed to disengage. With the vehicle
-      bus harness, only the right wheel can trigger this (scrolling, volume clicks and the left
-      chill-mode hold are ignored) and Instant is safe. Without it, Instant acts as 0.5s and a
-      long left-wheel hold also disengages.
+    description: How long to hold the right scroll wheel button to disengage. Instant disengages
+      with a single click.
     options:
     - value: 0
       label: Instant

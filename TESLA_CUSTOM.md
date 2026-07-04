@@ -24,8 +24,10 @@ everything (openpilot longitudinal via `buttonCancel` → `USER_DISABLE`, and MA
 - Anti-bounce (causal, not timed): the car can treat the tail of the cancel click as an engage
   command, which would re-engage everything immediately (observed on the road — dangerous). After a
   cancel, `blockPcmEnable` stays set until the press is fully released (200 ms debounce) AND a
-  fresh press begins; openpilot's cancel spam turns any car-side TACC re-engage back off in the
-  meantime. Re-engaging is simply clicking again — no waiting period.
+  fresh press begins. During that whole rearm window the carcontroller sends a standing
+  `ACC_CANCEL_GENERIC_SILENT` instead of `ACC_ON`, so the DI never completes the click-tail engage
+  and no engage/disengage chime sounds. Re-engaging is simply clicking again — no waiting period.
+  (UI copy is deliberately end-user-simple; the vehicle-bus/fallback details live here instead.)
 
 Side effect (intentional): enabling this lifts the "limited MADS" restriction for Tesla without the
 vehicle bus (`sunnypilot/mads/helpers.py`), unlocking **Steering Mode on Brake Pedal**
