@@ -59,34 +59,10 @@ sections:
   - key: TeslaButtonCancels
     widget: toggle
     title: Cruise Button Toggles Engagement (Alpha)
-    description: Pressing the cruise/engage button while sunnypilot is engaged disengages it, making the button a full
-      on/off toggle. Without this, the button press is overridden while sunnypilot longitudinal control is active.
-      This is an alpha feature. Use at your own risk.
+    description: The right scroll wheel button becomes an on/off switch. Click to engage, click
+      again to disengage. This is an alpha feature. Use at your own risk.
     enablement:
     - $ref: '#/macros/offroad'
-  - key: TeslaButtonCancelHoldDuration
-    widget: multiple_button
-    title: Disengage Hold Duration
-    description: How long to hold the right scroll wheel button to disengage. Instant disengages
-      with a single click.
-    options:
-    - value: 0
-      label: Instant
-      enablement:
-      - type: capability
-        field: tesla_has_vehicle_bus
-        equals: true
-    - value: 1
-      label: 0.5s
-    - value: 2
-      label: 1s
-    - value: 3
-      label: 2s
-    enablement:
-    - $ref: '#/macros/offroad'
-    - type: param
-      key: TeslaButtonCancels
-      equals: true
   - key: TeslaSoftGasThreshold
     widget: toggle
     title: Light Accelerator Keeps Braking (Alpha)
