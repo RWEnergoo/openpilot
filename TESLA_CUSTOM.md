@@ -86,12 +86,12 @@ Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 
 | Feature | Status |
 |---|---|
-| Button toggle, instant click (vehicle bus path) | ✅ validated on the road (route 0000000e), incl. rearm block |
-| Silent rearm window (no chime, ff16f98) | 🔜 pending validation ride |
-| Button toggle **0.5 s hold fallback (no vehicle bus)** | ❌ **UNTESTED — do not assume it works.** This car always takes the vehicle-bus path; testing requires a temporary commit that ignores HAS_VEHICLE_BUS to force the fallback. Planned after everything else is validated. |
-| Steering Mode on Brake Pedal = Remain Active | 🔜 untested |
-| Steering override pause + 0.25 s resume | 🔜 untested |
-| Soft gas threshold + proportional brake blend | 🔜 untested |
+| Button toggle, instant click (vehicle bus path) | ✅ **Beta** — validated incl. rearm block, silent rearm, 1.5 s all-off hold |
+| Button toggle 0.5 s hold fallback + runtime failover | ✅ validated via the (since removed) Simulate Vehicle Bus Loss dev toggle; the `TeslaSimVehicleBusLoss` param still exists for future regression tests, set it manually |
+| Park = all-off pulse | ✅ validated |
+| Steering Mode on Brake Pedal = Remain Active | ✅ in daily use |
+| Steering override pause (v2 conditions + MADS-flap persistence + standstill block) | ✅ fights gone; parking-maneuver polish under continued testing before Beta |
+| Soft gas threshold + proportional brake blend | ✅ **Beta** — "works exactly like factory TACC" |
 
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:

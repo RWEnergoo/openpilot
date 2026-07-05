@@ -2197,27 +2197,11 @@
         {
           "key": "TeslaButtonCancels",
           "widget": "toggle",
-          "title": "Cruise Button Toggles Engagement (Alpha)",
-          "description": "The right scroll wheel button becomes an on/off switch. Click to engage, click again to disengage. Hold the button for 1.5 seconds to disengage everything, including steering-only mode. This is an alpha feature. Use at your own risk.",
+          "title": "Cruise Button Toggles Engagement (Beta)",
+          "description": "The right scroll wheel button becomes an on/off switch. Click to engage, click again to disengage. Hold the button for 1.5 seconds to disengage everything, including steering-only mode.",
           "enablement": [
             {
               "type": "offroad_only"
-            }
-          ]
-        },
-        {
-          "key": "TeslaSimVehicleBusLoss",
-          "widget": "toggle",
-          "title": "Simulate Vehicle Bus Loss (Dev)",
-          "description": "Test toggle: starves the button trigger's vehicle bus reads to simulate a cable break, forcing the fallback (hold either wheel 0.5s to disengage while engaged; the 1.5s all-off hold keeps working). For validating the failover path without pulling connectors.",
-          "enablement": [
-            {
-              "type": "offroad_only"
-            },
-            {
-              "type": "param",
-              "key": "ShowAdvancedControls",
-              "equals": true
             }
           ]
         },
