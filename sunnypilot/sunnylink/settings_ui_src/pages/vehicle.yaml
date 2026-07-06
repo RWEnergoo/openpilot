@@ -76,12 +76,12 @@ sections:
     - $ref: '#/macros/longitudinal'
   - key: TeslaSteerOverridePauses
     widget: toggle
-    title: Steering Override Pauses Steering (Alpha)
+    title: Steering Override Pauses Steering (Beta)
     description: A steering override pauses lane centering instead of disengaging sunnypilot.
       Longitudinal control keeps running, like factory TACC. Steering resumes once the wheel is at
       rest, your grip is relaxed and the requested angle is close - and never while the car is
       stationary. Requires Cruise Button Toggles Engagement, so steering can always be switched
-      off with the button. This is an alpha feature. Use at your own risk.
+      off with the button.
     enablement:
     - $ref: '#/macros/offroad'
     - type: param

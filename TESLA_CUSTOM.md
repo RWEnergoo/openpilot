@@ -90,7 +90,7 @@ Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 | Button toggle 0.5 s hold fallback + runtime failover | ✅ validated via the (since removed) Simulate Vehicle Bus Loss dev toggle; the `TeslaSimVehicleBusLoss` param still exists for future regression tests, set it manually |
 | Park = all-off pulse | ✅ validated |
 | Steering Mode on Brake Pedal = Remain Active | ✅ in daily use |
-| Steering override pause (v2 conditions + MADS-flap persistence + standstill block) | ✅ fights gone; parking-maneuver polish under continued testing before Beta |
+| Steering override pause (v2 conditions + MADS-flap persistence + standstill block) | ✅ **Beta** — fights gone, parking maneuvers validated |
 | Soft gas threshold + proportional brake blend | ✅ **Beta** — "works exactly like factory TACC" |
 
 ## Updating from upstream sunnypilot
