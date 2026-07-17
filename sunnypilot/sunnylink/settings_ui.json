@@ -2206,6 +2206,27 @@
           ]
         },
         {
+          "key": "TeslaGapAdjustTilt",
+          "widget": "toggle",
+          "title": "Following Distance via Scroll Wheel (Alpha)",
+          "description": "Tilt the right scroll wheel sideways to cycle the driving personality (following distance), like adjusting follow distance on factory Autopilot. Hold the tilt for half a second to toggle Experimental Mode. This is an alpha feature. Use at your own risk.",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            },
+            {
+              "type": "capability",
+              "field": "has_longitudinal_control",
+              "equals": true
+            },
+            {
+              "type": "capability",
+              "field": "tesla_has_vehicle_bus",
+              "equals": true
+            }
+          ]
+        },
+        {
           "key": "TeslaSoftGasThreshold",
           "widget": "toggle",
           "title": "Light Accelerator Keeps Braking (Beta)",

@@ -225,6 +225,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SubaruStopAndGoManualParkingBrake", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TeslaCoopSteering", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TeslaButtonCancels", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"TeslaGapAdjustTilt", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TeslaSimVehicleBusLoss", {PERSISTENT, BOOL, "0"}},
     {"TeslaSoftGasThreshold", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TeslaSteerOverridePauses", {PERSISTENT | BACKUP, BOOL, "0"}},
