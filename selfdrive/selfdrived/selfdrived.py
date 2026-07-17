@@ -78,6 +78,8 @@ class SelfdriveD(CruiseHelper):
 
     # sunnypilot: Tesla steering override pause
     self.tesla_steer_override_pauses = self.CP.brand == 'tesla' and bool(self.CP_SP.flags & TeslaFlagsSP.STEER_OVERRIDE_PAUSES)
+    # sunnypilot: Tesla directional following distance via right wheel tilt
+    self.tesla_gap_adjust_tilt = self.CP.brand == 'tesla' and bool(self.CP_SP.flags & TeslaFlagsSP.GAP_ADJUST_TILT)
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -484,7 +486,24 @@ class SelfdriveD(CruiseHelper):
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
-      if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
+      if self.tesla_gap_adjust_tilt:
+        # sunnypilot: directional following distance like stock Tesla - tilt right
+        # (gapAdjustCruise) = one step more relaxed, tilt left (altButton2) = one step
+        # more aggressive, with end stops instead of wrapping
+        step = 0
+        if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
+          step = 1
+        elif any(not be.pressed and be.type == ButtonType.altButton2 for be in CS.buttonEvents):
+          step = -1
+        if step != 0:
+          if not self.experimental_mode_switched:
+            new_personality = max(0, min(2, self.personality + step))
+            if new_personality != self.personality:
+              self.personality = new_personality
+              self.params.put('LongitudinalPersonality', self.personality)
+              self.events.add(EventName.personalityChanged)
+          self.experimental_mode_switched = False
+      elif any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
         if not self.experimental_mode_switched:
           self.personality = (self.personality - 1) % 3
           self.params.put('LongitudinalPersonality', self.personality)

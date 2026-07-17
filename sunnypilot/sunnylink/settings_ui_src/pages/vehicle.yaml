@@ -67,10 +67,10 @@ sections:
   - key: TeslaGapAdjustTilt
     widget: toggle
     title: Following Distance via Scroll Wheel (Alpha)
-    description: Tilt the right scroll wheel sideways to cycle the driving personality
-      (following distance), like adjusting follow distance on factory Autopilot. Hold the tilt
-      for half a second to toggle Experimental Mode. This is an alpha feature. Use at your own
-      risk.
+    description: Tilt the right scroll wheel sideways to adjust the driving personality
+      (following distance), like factory Autopilot - left is more aggressive, right is more
+      relaxed. Hold a right tilt for half a second to toggle Experimental Mode. This is an
+      alpha feature. Use at your own risk.
     enablement:
     - $ref: '#/macros/offroad'
     - $ref: '#/macros/longitudinal'
