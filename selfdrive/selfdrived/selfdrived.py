@@ -28,7 +28,7 @@ from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 from openpilot.sunnypilot import get_sanitize_int_param
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
-from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
+from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper, DISTANCE_LONG_PRESS
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
@@ -80,6 +80,7 @@ class SelfdriveD(CruiseHelper):
     self.tesla_steer_override_pauses = self.CP.brand == 'tesla' and bool(self.CP_SP.flags & TeslaFlagsSP.STEER_OVERRIDE_PAUSES)
     # sunnypilot: Tesla directional following distance via right wheel tilt
     self.tesla_gap_adjust_tilt = self.CP.brand == 'tesla' and bool(self.CP_SP.flags & TeslaFlagsSP.GAP_ADJUST_TILT)
+    self.tesla_tilt_hold_frames = {ButtonType.gapAdjustCruise: 0, ButtonType.altButton2: 0}
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -482,7 +483,13 @@ class SelfdriveD(CruiseHelper):
     if CS.gearShifter == car.CarState.GearShifter.park and self.mads.enabled:
       self.events.remove(EventName.canBusMissing)
 
-    CruiseHelper.update(self, CS, self.events_sp, self.experimental_mode)
+    if self.tesla_gap_adjust_tilt:
+      # sunnypilot: deterministic tilt holds instead of CruiseHelper's ambiguous toggle -
+      # the comma 4 layout has no persistent mode icon, so the gesture itself must define
+      # the state: hold right tilt = Experimental Mode ON, hold left tilt = OFF
+      self.update_tesla_tilt_holds(CS)
+    else:
+      CruiseHelper.update(self, CS, self.events_sp, self.experimental_mode)
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
@@ -509,6 +516,36 @@ class SelfdriveD(CruiseHelper):
           self.params.put('LongitudinalPersonality', self.personality)
           self.events.add(EventName.personalityChanged)
         self.experimental_mode_switched = False
+
+  def update_tesla_tilt_holds(self, CS):
+    # sunnypilot: hold right tilt (gapAdjustCruise) 0.5s = Experimental Mode ON,
+    # hold left tilt (altButton2) 0.5s = OFF. Deterministic set instead of a toggle.
+    if not (self.CP.openpilotLongitudinalControl and CS.cruiseState.available):
+      for button in self.tesla_tilt_hold_frames:
+        self.tesla_tilt_hold_frames[button] = 0
+      return
+
+    for button in self.tesla_tilt_hold_frames:
+      if self.tesla_tilt_hold_frames[button] > 0:
+        self.tesla_tilt_hold_frames[button] += 1
+
+    for button_event in CS.buttonEvents:
+      button = button_event.type.raw
+      if button in self.tesla_tilt_hold_frames:
+        self.tesla_tilt_hold_frames[button] = int(button_event.pressed)
+
+    if not self.experimental_mode_switched:
+      new_mode = None
+      if self.tesla_tilt_hold_frames[ButtonType.gapAdjustCruise] >= DISTANCE_LONG_PRESS:
+        new_mode = True
+      elif self.tesla_tilt_hold_frames[ButtonType.altButton2] >= DISTANCE_LONG_PRESS:
+        new_mode = False
+
+      if new_mode is not None:
+        if new_mode != self.experimental_mode:
+          self.params.put_bool("ExperimentalMode", new_mode)
+          self.events_sp.add(custom.OnroadEventSP.EventName.experimentalModeSwitched)
+        self.experimental_mode_switched = True
 
     self.icbm.run(CS, self.sm['carControl'], self.sm['longitudinalPlanSP'], self.is_metric)
 

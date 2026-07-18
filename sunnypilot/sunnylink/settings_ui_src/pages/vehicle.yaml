@@ -58,7 +58,7 @@ sections:
     - $ref: '#/macros/offroad'
   - key: TeslaButtonCancels
     widget: toggle
-    title: Cruise Button Toggles Engagement (Beta)
+    title: Cruise Button Toggles Engagement
     description: The right scroll wheel button becomes an on/off switch. Click to engage, click
       again to disengage. Hold the button for 1.5 seconds to disengage everything, including
       steering-only mode.
@@ -69,8 +69,8 @@ sections:
     title: Following Distance via Scroll Wheel (Alpha)
     description: Tilt the right scroll wheel sideways to adjust the driving personality
       (following distance), like factory Autopilot - left is more aggressive, right is more
-      relaxed. Hold a right tilt for half a second to toggle Experimental Mode. This is an
-      alpha feature. Use at your own risk.
+      relaxed. Hold a tilt for half a second to set Experimental Mode - right turns it on,
+      left turns it off. This is an alpha feature. Use at your own risk.
     enablement:
     - $ref: '#/macros/offroad'
     - $ref: '#/macros/longitudinal'
@@ -89,7 +89,7 @@ sections:
     - $ref: '#/macros/longitudinal'
   - key: TeslaSteerOverridePauses
     widget: toggle
-    title: Steering Override Pauses Steering (Beta)
+    title: Steering Override Pauses Steering
     description: A steering override pauses lane centering instead of disengaging sunnypilot.
       Longitudinal control keeps running, like factory TACC. Steering resumes once the wheel is at
       rest, your grip is relaxed and the requested angle is close - and never while the car is
