@@ -91,7 +91,8 @@ Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 | Park = all-off pulse | ✅ validated |
 | Steering Mode on Brake Pedal = Remain Active | ✅ in daily use |
 | Steering override pause (v2 conditions + MADS-flap persistence + standstill block) | ✅ **Stable** — "can't make it fail" |
-| Following distance / Experimental via right-wheel tilt | 🔜 Alpha — direction mapping fixed after road test (DBC names inverted vs physical); deterministic holds (right=ON, left=OFF) pending re-test |
+| Following distance / Experimental via right-wheel tilt | ✅ **Beta** — right = more aggressive / Experimental ON, left = more relaxed / OFF, both confirmed on the road |
+| Upstream merge (423 + 135 commits, `openpilot/` package restructure, fork flags renumbered off upstream's MADS screen-button bits) | ✅ validated on the road |
 | Soft gas threshold + proportional brake blend | ✅ **Beta** — "works exactly like factory TACC" |
 
 ## Updating from upstream sunnypilot
