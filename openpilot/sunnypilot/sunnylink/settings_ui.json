@@ -2342,8 +2342,8 @@
         {
           "key": "TeslaGapAdjustTilt",
           "widget": "toggle",
-          "title": "Following Distance via Scroll Wheel (Alpha)",
-          "description": "Tilt the right scroll wheel sideways to adjust the driving personality (following distance), like factory Autopilot - right is more aggressive, left is more relaxed. Hold a tilt for half a second to set Experimental Mode - right turns it on, left turns it off. This is an alpha feature. Use at your own risk.",
+          "title": "Following Distance via Scroll Wheel (Beta)",
+          "description": "Tilt the right scroll wheel sideways to adjust the driving personality (following distance), like factory Autopilot - right is more aggressive, left is more relaxed. Hold a tilt for half a second to set Experimental Mode - right turns it on, left turns it off.",
           "enablement": [
             {
               "type": "offroad_only"
