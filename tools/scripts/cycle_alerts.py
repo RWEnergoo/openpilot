@@ -2,8 +2,9 @@
 import time
 import random
 
-from cereal import car, log
-import cereal.messaging as messaging
+from openpilot.cereal import log
+from opendbc.car.structs import car
+import openpilot.cereal.messaging as messaging
 from opendbc.car.honda.interface import CarInterface
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.selfdrived.events import ET, Events
@@ -49,12 +50,12 @@ def cycle_alerts(duration=200, is_metric=False):
     (EventName.cameraFrameRate, ET.PERMANENT),
   ]
 
-  cameras = ['roadCameraState', 'wideRoadCameraState', 'driverCameraState']
+  cameras = ['narrowRoadCameraState', 'wideRoadCameraState', 'cabinCameraState']
 
   CS = car.CarState.new_message()
   CP = CarInterface.get_non_essential_params("HONDA_CIVIC")
-  sm = messaging.SubMaster(['deviceState', 'pandaStates', 'roadCameraState', 'modelV2', 'liveCalibration',
-                            'driverMonitoringState', 'longitudinalPlan', 'livePose',
+  sm = messaging.SubMaster(['deviceState', 'pandaStates', 'narrowRoadCameraState', 'modelV2', 'extrinsicsCalibration',
+                            'driverMonitoringState', 'longitudinalPlan', 'deviceMotion',
                             'managerState'] + cameras)
 
   pm = messaging.PubMaster(['selfdriveState', 'pandaStates', 'deviceState'])
@@ -86,7 +87,7 @@ def cycle_alerts(duration=200, is_metric=False):
         procs[i].shouldBeRunning = True
       sm['managerState'].processes = procs
 
-      sm['liveCalibration'].rpyCalib = [-1 * random.random() for _ in range(random.randint(0, 3))]
+      sm['extrinsicsCalibration'].rpyCalib = [-1 * random.random() for _ in range(random.randint(0, 3))]
 
       for s in sm.data.keys():
         prob = 0.3 if s in cameras else 0.08

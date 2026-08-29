@@ -1,0 +1,170 @@
+# Page: vehicle (per-brand settings)
+# Compiles to settings_ui.json#vehicle_settings (brand = section id).
+id: vehicle
+label: Vehicle
+icon: vehicle
+order: 99
+kind: vehicle
+sections:
+- id: hyundai
+  title: Hyundai / Kia / Genesis Settings
+  description: ''
+  items:
+  - key: HyundaiLongitudinalTuning
+    widget: multiple_button
+    title: Custom Longitudinal Tuning
+    options:
+    - value: 0
+      label: 'Off'
+    - value: 1
+      label: Dynamic
+    - value: 2
+      label: Predictive
+    visibility:
+    - type: capability
+      field: hyundai_alpha_long_available
+      equals: true
+    enablement:
+    - $ref: '#/macros/offroad'
+    - $ref: '#/macros/longitudinal'
+- id: subaru
+  title: Subaru Settings
+  description: ''
+  items:
+  - key: SubaruStopAndGo
+    widget: toggle
+    title: Stop and Go (Beta)
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: capability
+      field: has_stop_and_go
+      equals: true
+  - key: SubaruStopAndGoManualParkingBrake
+    widget: toggle
+    title: Stop and Go for Manual Parking Brake (Beta)
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: capability
+      field: has_stop_and_go
+      equals: true
+- id: tesla
+  title: Tesla Settings
+  description: ''
+  items:
+  - key: TeslaCoopSteering
+    widget: toggle
+    title: Cooperative Steering (Beta)
+    enablement:
+    - $ref: '#/macros/offroad'
+  - key: TeslaMadsScreenButton
+    widget: multiple_button
+    title: MADS Screen Activation
+    description: 'Use a multi-finger press on the infotainment screen to toggle MADS.
+      This allows the use of full MADS functionality when enabled. Selecting a higher
+      finger count may reduce accidental activations. Note: Setting this to Off will
+      reset your MADS settings to default.'
+    options:
+    - value: 0
+      label: 'Off'
+    - value: 1
+      label: 3-Finger
+    - value: 2
+      label: 4-Finger
+    - value: 3
+      label: 5-Finger
+    visibility:
+    - type: capability
+      field: tesla_has_vehicle_bus
+      equals: true
+    enablement:
+    - $ref: '#/macros/offroad'
+  - key: TeslaButtonCancels
+    widget: toggle
+    title: Cruise Button Toggles Engagement
+    description: The right scroll wheel button becomes an on/off switch. Click to engage, click
+      again to disengage. Hold the button for 1.5 seconds to disengage everything, including
+      steering-only mode.
+    enablement:
+    - $ref: '#/macros/offroad'
+  - key: TeslaGapAdjustTilt
+    widget: toggle
+    title: Following Distance via Scroll Wheel (Alpha)
+    description: Tilt the right scroll wheel sideways to adjust the driving personality
+      (following distance), like factory Autopilot - right is more aggressive, left is more
+      relaxed. Hold a tilt for half a second to set Experimental Mode - right turns it on,
+      left turns it off. This is an alpha feature. Use at your own risk.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - $ref: '#/macros/longitudinal'
+    - type: capability
+      field: tesla_has_vehicle_bus
+      equals: true
+  - key: TeslaSoftGasThreshold
+    widget: toggle
+    title: Light Accelerator Keeps Braking (Beta)
+    description: 'A lightly feathered accelerator (10% or less) does not count as an override, and
+      braking force blends down with pedal position like factory TACC: 5% pedal halves the planned
+      braking, 10% removes it. Note: with this enabled the system may brake while you are lightly
+      pressing the accelerator. Above 10% pedal, normal override behavior applies.'
+    enablement:
+    - $ref: '#/macros/offroad'
+    - $ref: '#/macros/longitudinal'
+  - key: TeslaSteerOverridePauses
+    widget: toggle
+    title: Steering Override Pauses Steering
+    description: A steering override pauses lane centering instead of disengaging sunnypilot.
+      Longitudinal control keeps running, like factory TACC. Steering resumes once the wheel is at
+      rest, your grip is relaxed and the requested angle is close - and never while the car is
+      stationary. Requires Cruise Button Toggles Engagement, so steering can always be switched
+      off with the button.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: param
+      key: TeslaButtonCancels
+      equals: true
+    - type: capability
+      field: tesla_has_vehicle_bus
+      equals: true
+  - key: TeslaSteerOverrideResumeDelay
+    widget: multiple_button
+    title: Steering Resume Delay
+    description: How long to wait after releasing a steering override before lane centering resumes.
+      Steering only resumes once your grip is relaxed and the wheel is close to the requested angle,
+      so 0.25s hands back control near-immediately.
+    options:
+    - value: 0
+      label: 0.25s
+    - value: 1
+      label: 0.5s
+    - value: 2
+      label: 1s
+    - value: 3
+      label: 2s
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: param
+      key: TeslaSteerOverridePauses
+      equals: true
+- id: toyota
+  title: Toyota / Lexus Settings
+  description: ''
+  items:
+  - key: ToyotaEnforceStockLongitudinal
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Enforce Factory Longitudinal Control
+    description: sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used.
+    enablement:
+    - $ref: '#/macros/not_engaged'
+  - key: ToyotaStopAndGoHack
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Stop and Go Hack (Alpha)
+    description: sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only
+      applicable to certain models that are able to use longitudinal control. This is an alpha feature. Use at your own risk.
+    enablement:
+    - $ref: '#/macros/not_engaged'
+    - $ref: '#/macros/longitudinal'
+    - type: param
+      key: ToyotaEnforceStockLongitudinal
+      equals: false
