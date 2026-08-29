@@ -494,9 +494,9 @@ class SelfdriveD(CruiseHelper):
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
       if self.tesla_gap_adjust_tilt:
-        # sunnypilot: directional following distance like stock Tesla - tilt right
-        # (gapAdjustCruise) = one step more relaxed, tilt left (altButton2) = one step
-        # more aggressive, with end stops instead of wrapping
+        # sunnypilot: directional following distance like stock Tesla. gapAdjustCruise is
+        # the PHYSICAL LEFT tilt = one step more relaxed; altButton2 is the PHYSICAL RIGHT
+        # tilt = one step more aggressive. End stops instead of wrapping.
         step = 0
         if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
           step = 1
