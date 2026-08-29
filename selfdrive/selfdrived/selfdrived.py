@@ -535,10 +535,13 @@ class SelfdriveD(CruiseHelper):
         self.tesla_tilt_hold_frames[button] = int(button_event.pressed)
 
     if not self.experimental_mode_switched:
+      # NOTE: altButton2 is the PHYSICAL RIGHT tilt (the tilt->signal mapping in carstate_ext
+      # is swapped to get right = more aggressive following distance). Experimental Mode keeps
+      # the natural switch convention independently of that: right = ON, left = OFF.
       new_mode = None
-      if self.tesla_tilt_hold_frames[ButtonType.gapAdjustCruise] >= DISTANCE_LONG_PRESS:
+      if self.tesla_tilt_hold_frames[ButtonType.altButton2] >= DISTANCE_LONG_PRESS:
         new_mode = True
-      elif self.tesla_tilt_hold_frames[ButtonType.altButton2] >= DISTANCE_LONG_PRESS:
+      elif self.tesla_tilt_hold_frames[ButtonType.gapAdjustCruise] >= DISTANCE_LONG_PRESS:
         new_mode = False
 
       if new_mode is not None:
