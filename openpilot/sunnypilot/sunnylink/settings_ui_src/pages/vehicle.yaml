@@ -99,6 +99,15 @@ sections:
     - type: capability
       field: tesla_has_vehicle_bus
       equals: true
+  - key: TeslaMuteIsaChime
+    widget: toggle
+    title: Mute Speed Limit Chime (Alpha)
+    description: 'Silences the car''s speed limit warning chime, which EU rules re-enable at the
+      start of every drive. The speed limit sign stays visible on the dash - only the sound is
+      muted, so keep watching your speed. HW4 only. This is an alpha feature. Use at your own
+      risk.'
+    enablement:
+    - $ref: '#/macros/offroad'
   - key: TeslaSoftGasThreshold
     widget: toggle
     title: Light Accelerator Keeps Braking (Beta)
