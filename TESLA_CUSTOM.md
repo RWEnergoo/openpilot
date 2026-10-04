@@ -94,6 +94,7 @@ Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 | Following distance / Experimental via right-wheel tilt | ✅ **Beta** — right = more aggressive / Experimental ON, left = more relaxed / OFF, both confirmed on the road |
 | Upstream merge (423 + 135 commits, `openpilot/` package restructure, fork flags renumbered off upstream's MADS screen-button bits) | ✅ validated on the road |
 | Soft gas threshold + proportional brake blend | ✅ **Beta** — "works exactly like factory TACC" |
+| Mute EU ISA speed chime (`TeslaMuteIsaChime`) | 🔁 **In test** — first attempt (free running 2 Hz injection) failed: both copies alternate, stock frame newest ~50% of the time. Now echoed on arrival of each stock `DAS_status` |
 
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
