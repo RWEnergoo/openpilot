@@ -70,6 +70,17 @@ With this toggle, mirroring stock Tesla (override kills Autosteer, TACC keeps dr
 - Cooperative Steering's ~23 km/h minimum is a Tesla EPS firmware limit (control type 2), not
   addressable in software.
 
+### Hard rule: we never filter or block a car message
+This branch only ever **adds** frames to the bus. No message the car itself sends is dropped,
+delayed or rewritten on its way through, and no forwarding rule in `tesla_fwd_hook` is weakened
+for a feature. The ISA chime mute is the test case for this rule: suppressing the chime by
+blocking the stock `DAS_status` would work, but that message also carries blind spot, forward
+collision and lane departure warnings - and this branch is public, so whoever installs it does
+not know which of its features silently took a safety message away. Injecting alongside keeps
+the failure mode harmless: if our copy stops, the car's own copy simply takes over.
+
+If a feature can only be built by filtering, it does not get built.
+
 ## Changed files
 Main repo (this branch) and `opendbc_repo` submodule → `RWEnergoo/opendbc@tesla-custom`
 (see `.gitmodules`). Full list: `git log --stat master..tesla-custom` in both repos.
