@@ -105,7 +105,56 @@ Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 | Following distance / Experimental via right-wheel tilt | ✅ **Beta** — right = more aggressive / Experimental ON, left = more relaxed / OFF, both confirmed on the road |
 | Upstream merge (423 + 135 commits, `openpilot/` package restructure, fork flags renumbered off upstream's MADS screen-button bits) | ✅ validated on the road |
 | Soft gas threshold + proportional brake blend | ✅ **Beta** — "works exactly like factory TACC" |
-| Mute EU ISA speed chime (`TeslaMuteIsaChime`) | 🔁 **In test** — first attempt (free running 2 Hz injection) failed: both copies alternate, stock frame newest ~50% of the time. Now echoed on arrival of each stock `DAS_status` |
+
+## Tried and dropped: muting the EU ISA speed chime
+
+Built, road tested twice, measured, and **removed** (2026-10-05). Written down so nobody
+repeats it.
+
+**What the community does.** Three codebases implement this
+([lenfien/tesla-open-can-mod-release](https://github.com/lenfien/tesla-open-can-mod-release),
+[hypery11/flipper-tesla-fsd](https://github.com/hypery11/flipper-tesla-fsd),
+[ev-open-can-tools](https://github.com/ev-open-can-tools/ev-open-can-tools); the other repos
+that show up in a search are mirrors or vendored copies of those). All three do the same
+thing: on every `0x399` (921) frame, set byte 1 bit 5 (`ISA_speedLimitSoundActive`),
+recompute the Tesla additive checksum over bytes 0..6 with id 921, and re-send. hypery11
+calls `0x399` "the trap": on HW3/Legacy it is `DAS_status`, on HW4 it is the ISA message,
+while `DAS_status` moves to `0x39B`.
+
+**Why it cannot work on this car.** `0x399` does not exist here. Scanned a full drive on all
+three buses: 481 distinct addresses, bus 1 alone carries 378 (so it is a complete vehicle CAN,
+not a gateway-forwarded subset), and `0x399` shows up only on bus 1 as a 3-byte all-zero stub.
+Not on the party bus, never 8 bytes. No Highland owner in those projects' issue trackers
+reports the feature working either - the confirmations all come from pre-Highland HW4 and
+Juniper.
+
+**Why the obvious substitute is not the control.** `DAS_suppressSpeedWarning` (0x39B bit 13)
+looks right and even correlates with speed-limit events, but across 18 drives the car sets it
+**only** while `DAS_fusedSpeedLimit` is 0 - it means "no limit known, do not warn". Evidence:
+
+- Route `00000215`: 872 frames with the bit set, every one of them at limit 0.
+- Route `00000212`, the drive where the on-screen mute button was pressed repeatedly: the bit
+  stayed 0 for all 13 segments.
+- 18 drives with Tesla FSD engaged (`DAS_autopilotState` = 6): the bit is never set, and
+  `DAS_fusedSpeedLimit` is 0 in **0.0%** of 10130 engaged frames - the car always knows the
+  limit while FSD drives, which matches the speed limit sign staying on screen.
+- In those same drives the car was up to **15 km/h over a known limit while FSD steered, with
+  no chime**, and chimed in the same drives when the driver was over the limit manually.
+
+So the suppression is real but is not carried on any bus the comma taps. The display already
+receives `DAS_autopilotState` (it needs it to draw the FSD visualisation) and almost certainly
+decides for itself. Spoofing that state would tell the car and the driver that Tesla's FSD is
+steering when it is not, so it is out of scope.
+
+**Also learned along the way.** Injecting a copy of a message the car already sends on a free
+running timer does not work: two 2 Hz streams with a drifting phase alternate perfectly and the
+stock frame is the most recently received one ~50% of the time (measured: delta 0-493 ms
+uniform, 49.7%). Echo on arrival of each stock frame instead. That fix was correct and is worth
+remembering, even though the feature it served is gone.
+
+**If you have a pre-Highland HW4 or a Juniper**, `0x399` probably does exist on your car and the
+community implementations should work - but this branch will not ship it, because it cannot be
+validated here.
 
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
