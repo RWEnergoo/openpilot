@@ -2364,7 +2364,7 @@
           "key": "TeslaSoftGasThreshold",
           "widget": "toggle",
           "title": "Light Accelerator Keeps Braking (Beta)",
-          "description": "A lightly feathered accelerator (10% or less) does not count as an override, and braking force blends down with pedal position like factory TACC: 5% pedal halves the planned braking, 10% removes it. Note: with this enabled the system may brake while you are lightly pressing the accelerator. Above 10% pedal, normal override behavior applies.",
+          "description": "A lightly feathered accelerator (20% or less) does not count as an override, and braking force blends down with pedal position like factory TACC: 10% pedal halves the planned braking, 20% removes it. Note: with this enabled the system may brake while you are lightly pressing the accelerator. Above 20% pedal, normal override behavior applies.",
           "enablement": [
             {
               "type": "offroad_only"
