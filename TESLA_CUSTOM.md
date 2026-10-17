@@ -104,7 +104,7 @@ Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 | Steering override pause (v2 conditions + MADS-flap persistence + standstill block) | ✅ **Stable** — "can't make it fail" |
 | Following distance / Experimental via right-wheel tilt | ✅ **Beta** — right = more aggressive / Experimental ON, left = more relaxed / OFF, both confirmed on the road |
 | Upstream merge (423 + 135 commits, `openpilot/` package restructure, fork flags renumbered off upstream's MADS screen-button bits) | ✅ validated on the road |
-| Soft gas threshold + proportional brake blend | ✅ **Beta** — "works exactly like factory TACC" |
+| Soft gas threshold + proportional brake blend (20% window, 17.2% release) | ✅ **Stable** — two long drives actively trying to provoke it after the hysteresis fix; the on/off point is audible and feels right, no difference in driving behaviour, re-engages cleanly on release |
 
 ## Tried and dropped: muting the EU ISA speed chime
 
@@ -155,6 +155,32 @@ remembering, even though the feature it served is gone.
 **If you have a pre-Highland HW4 or a Juniper**, `0x399` probably does exist on your car and the
 community implementations should work - but this branch will not ship it, because it cannot be
 validated here.
+
+## Fixed: the car's cruise controller faulting mid-drive
+
+Reported as "the comma crashes while driving": red alert, loud takeover alarm, openpilot dead
+until the next drive. It was never a crash. The log says `Cruise Fault: Restart the Car`
+(`accFaulted/immediateDisable`) - the car's own cruise controller faulted and openpilot
+disengaged correctly, and it stays down because the car wants a restart.
+
+**Cause.** The soft gas threshold had no hysteresis. With the pedal resting exactly on it,
+oscillating between 20.0% and 20.4% - raw 50 and 51, one bit apart - `gasPressed` toggled at the
+sample rate, so `longActive` flipped 13 times in 1.5 s and `DAS_accelMin` jumped between 0 and
+-1.2 m/s2 with `DAS_setSpeed` moving along, until the DI gave up. Not specific to the 20% window:
+the same cliff sat at 10% before, which is why it predated widening it. Evidence: routes
+`0000024f` segment 12 and `0000024e` segment 1.
+
+**Fix.** Press at 20% (raw 50), release only below 17.2% (raw 43). Both land exactly on a bit at
+0.4 %/bit, so `carstate.py` and the safety firmware agree bit for bit - checked over all 256 raw
+values rising, falling, both boundary oscillations and 2000 random values. The logged oscillation
+now gives one transition instead of twenty. Hysteresis latches `gasPressed` longer, never
+shorter, so openpilot stops actuating sooner - the conservative direction.
+
+**Diagnosed entirely from public comma-connect routes**, with the device unreachable:
+`api.comma.ai/v1/route/<dongle>%7C<route>/files` needs no auth for a public route and returns
+rlogs plus qlogs (qlogs upload over cellular, so they cover the whole drive). Alert strings and
+swaglog lines are plain text in those files, so grepping the decompressed bytes finds the segment
+and the event without any capnp.
 
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
