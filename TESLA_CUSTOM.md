@@ -182,6 +182,45 @@ rlogs plus qlogs (qlogs upload over cellular, so they cover the whole drive). Al
 swaglog lines are plain text in those files, so grepping the decompressed bytes finds the segment
 and the event without any capnp.
 
+## Tried and dropped: following the car's read speed limit
+
+Investigated 2026-10-17, **not built**. The idea was Tesla-style automatic set-speed changes
+when the car reads a new sign. Written down because the investigation settles several things.
+
+**The plumbing exists.** `carstate_ext` already publishes `ret_sp.speedLimit` from
+`DAS_fusedSpeedLimit`, and sunnypilot ships a Speed Limit Assist (`Policy.car_state_only`,
+`Mode.assist`, fixed/percentage offset) with its settings already in the app. Assist is gated off
+for Tesla only on release branches, so it is selectable here.
+
+**But the car owns the set speed.** Tesla's interface never sets `pcmCruise`, so it keeps the
+base default `True`, and `cruise.py` then does `v_cruise_kph = CS.cruiseState.speed`. openpilot
+only follows. Two consequences: nothing needs building for the engage case (Tesla's own
+"higher of current speed and last sign" is already in the number we receive), and we cannot
+change the set speed by writing an openpilot variable - it is overwritten every cycle.
+
+**Nothing on the bus carries or commands it.** `DAS_setSpeed`, which we already send in
+`DAS_control` every cycle as `(v_ego + accel)`, is not adopted as the set speed. Scanning 10
+real set-speed steps against every address on all three buses found no message whose bytes track
+the set speed, and the statistical front-runners were artifacts: the driver's scroll clicks come
+0.3 s apart, so one unrelated 1 Hz message lands in every window.
+
+**It is the scroll wheel, read directly.** `VCLEFT_swcRightScrollTicks` (0x3C2 mux 1, bit 24,
+6 bits signed) carries the detent count, and the DI reads it off the vehicle bus and does its own
+arithmetic. Measured: ticks of 3 and 5 within 0.2 s of each step.
+
+**Why we stopped.** The only lever would be injecting scroll ticks on bus 1. `0x3C2` is not the
+steering wheel message - it is the whole left switch pack, carrying window switches, seat
+adjustment, mirror tilt and the buckle switch in mux 0. Transmitting there for a convenience
+feature is a different risk class from `DAS_steeringControl`, it needs a new TX permission on a
+bus we never transmit on, our own button and tilt features read the same message, and on Belgian
+roads the car's limit is structurally too low anyway (a sign is void at the next intersection).
+Driver's call: not worth it.
+
+**Trap worth remembering:** `cruiseState.speed` comes from `DI_state.DI_digitalSpeed`, which is a
+display field - with cruise off it tracks the current speed, with cruise on it is the set speed.
+Any analysis of "set speed steps" must filter on `cruiseState.enabled` or the mode switches look
+like driver input.
+
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
 merge `sunnypilot/sunnypilot@master` into `tesla-custom` (and rebase the opendbc fork onto the
