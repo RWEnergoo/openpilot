@@ -107,6 +107,7 @@ class HudRenderer(Widget):
     self.speed: float = 0.0
     self.v_ego_cluster_seen: bool = False
     self._engaged: bool = False
+    self._set_speed_differs: bool = False
     self._chestnut_fade_time: float = 0
 
     self._can_draw_top_icons = True
@@ -168,6 +169,12 @@ class HudRenderer(Widget):
       self._chestnut_fade_time = rl.get_time() if engaged else 0
     self._engaged = engaged
     self.set_speed = set_speed
+
+    # Keep the set speed on screen as long as openpilot holds a different one than the car's own
+    # (Tesla speed limit pulse): the driver has to be able to see what we are actually holding,
+    # not just for the 2.5 s right after it changed.
+    car_set_speed = car_state.cruiseState.speedCluster * CV.MS_TO_KPH
+    self._set_speed_differs = engaged and car_set_speed > 0.0 and abs(set_speed - car_set_speed) > 0.5
     self.is_cruise_set = 0 < self.set_speed < SET_SPEED_NA
     self.is_cruise_available = self.set_speed != -1
 
@@ -264,7 +271,8 @@ class HudRenderer(Widget):
 
   def _draw_set_speed(self, rect: rl.Rectangle) -> None:
     """Draw the MAX speed indicator box."""
-    alpha = self._set_speed_alpha_filter.update(0 < rl.get_time() - self._set_speed_changed_time < SET_SPEED_PERSISTENCE and
+    recently_changed = 0 < rl.get_time() - self._set_speed_changed_time < SET_SPEED_PERSISTENCE
+    alpha = self._set_speed_alpha_filter.update((recently_changed or self._set_speed_differs) and
                                                 self._can_draw_top_icons and self._engaged)
     if alpha < 1e-2:
       return

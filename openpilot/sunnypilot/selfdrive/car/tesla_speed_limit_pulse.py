@@ -20,6 +20,12 @@ See the LICENSE.md file in the root directory for more details.
 
 MOTORWAY_CUTOFF_KPH = 100.0
 
+# The speed limit resolver freezes its value while cruise is off and only refreshes a moment
+# after engaging (measured: ~0.8 s). That refresh looks exactly like a sign change, so without
+# a settling window the very first pulse of every drive fires on the PREVIOUS zone's limit.
+# While settling we keep re-baselining instead of acting, so the driver's own set speed stands.
+SETTLE_CALLS = 200  # ~2 s at the 100 Hz card loop
+
 
 class SpeedLimitPulse:
   def __init__(self, enabled: bool):
@@ -31,6 +37,7 @@ class SpeedLimitPulse:
     self.target_kph = 0.0
     self.limit_prev_kph = 0.0
     self.car_set_prev_kph = 0.0
+    self.settle_calls = 0
     self.active = False
 
   def update(self, cruise_enabled: bool, car_set_speed_kph: float, speed_limit_kph: float,
@@ -47,6 +54,7 @@ class SpeedLimitPulse:
       self.target_kph = car_set_speed_kph
       self.limit_prev_kph = speed_limit_kph
       self.car_set_prev_kph = car_set_speed_kph
+      self.settle_calls = SETTLE_CALLS
       return self.target_kph
 
     if car_set_speed_kph != self.car_set_prev_kph:
@@ -55,6 +63,12 @@ class SpeedLimitPulse:
       self.car_set_prev_kph = car_set_speed_kph
       self.ceiling_kph = car_set_speed_kph
       self.target_kph = car_set_speed_kph
+      return self.target_kph
+
+    if self.settle_calls > 0:
+      # let the resolver catch up after engaging before any limit change counts as a pulse
+      self.settle_calls -= 1
+      self.limit_prev_kph = speed_limit_kph
       return self.target_kph
 
     if speed_limit_kph != self.limit_prev_kph:

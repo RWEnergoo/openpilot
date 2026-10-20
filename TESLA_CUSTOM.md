@@ -182,44 +182,66 @@ rlogs plus qlogs (qlogs upload over cellular, so they cover the whole drive). Al
 swaglog lines are plain text in those files, so grepping the decompressed bytes finds the segment
 and the event without any capnp.
 
-## Tried and dropped: following the car's read speed limit
+## Following the car's read speed limit (pulse-triggered)
 
-Investigated 2026-10-17, **not built**. The idea was Tesla-style automatic set-speed changes
-when the car reads a new sign. Written down because the investigation settles several things.
+Investigated 2026-10-17, built 2026-10-20. Option `TeslaSpeedLimitPulse`, flag
+`SPEED_LIMIT_PULSE = 4096`. Tesla-style automatic set-speed changes when the car reads a new
+sign, **without transmitting anything new**.
 
-**The plumbing exists.** `carstate_ext` already publishes `ret_sp.speedLimit` from
-`DAS_fusedSpeedLimit`, and sunnypilot ships a Speed Limit Assist (`Policy.car_state_only`,
-`Mode.assist`, fixed/percentage offset) with its settings already in the app. Assist is gated off
-for Tesla only on release branches, so it is selectable here.
+**The design, in the driver's words.** The scroll wheel sets the ceiling; we only ever lower
+from it, never raise above it. Only a *change* of the read limit acts (a pulse) - holding a
+limit does nothing, so one scroll up settles a stale sign and nothing fights you afterwards.
+A change of the car's own set speed can only be the driver, so that value is adopted as the new
+ceiling and followed: manual always wins. Above `MOTORWAY_CUTOFF_KPH = 100` the feature does
+nothing at all, because Tesla ignores motorway signs and braking from 120 to a slip-road sign is
+exactly what must not happen.
 
-**But the car owns the set speed.** Tesla's interface never sets `pcmCruise`, so it keeps the
-base default `True`, and `cruise.py` then does `v_cruise_kph = CS.cruiseState.speed`. openpilot
-only follows. Two consequences: nothing needs building for the engage case (Tesla's own
-"higher of current speed and last sign" is already in the number we receive), and we cannot
-change the set speed by writing an openpilot variable - it is overwritten every cycle.
+**How it takes the set speed without transmitting.** Enabling the option also sets
+`CP_SP.pcmCruiseSpeed = False`, which hands ownership of the set speed to openpilot:
+`cruise.py` then stops copying `CS.cruiseState.speed` every cycle and our hook writes
+`v_cruise_kph` instead. The car keeps its own set speed on its own screen - we never tell it
+anything - and openpilot simply plans to a lower number. `pcmCruise` itself stays `True`.
 
-**Nothing on the bus carries or commands it.** `DAS_setSpeed`, which we already send in
-`DAS_control` every cycle as `(v_ego + accel)`, is not adopted as the set speed. Scanning 10
-real set-speed steps against every address on all three buses found no message whose bytes track
-the set speed, and the statistical front-runners were artifacts: the driver's scroll clicks come
-0.3 s apart, so one unrelated 1 Hz message lands in every window.
+**The settling window, and why it exists.** The speed limit resolver *freezes* its value while
+cruise is off and only refreshes roughly 0.8 s **after** engaging. Measured on route
+`00000266`: engaged at 55 with the resolver still holding 30 from the previous zone, 0.8 s later
+it corrected to 50 and the pulse fired on that correction. Proof of the freeze in the same
+drive: between t=118 and t=138 the car drove out of a 50 zone into a 30 zone with cruise off and
+the resolver stayed on 50 the whole time. That refresh is indistinguishable from a sign change,
+so for `SETTLE_CALLS = 200` (~2 s at the 100 Hz card loop) after engaging we keep re-baselining
+`limit_prev` instead of acting. Without it, every single engagement immediately overrode the
+driver's set speed with the *previous* zone's limit.
 
-**It is the scroll wheel, read directly.** `VCLEFT_swcRightScrollTicks` (0x3C2 mux 1, bit 24,
-6 bits signed) carries the detent count, and the DI reads it off the vehicle bus and does its own
-arithmetic. Measured: ticks of 3 and 5 within 0.2 s of each step.
+**The set speed stays on screen while we hold a different one.** The comma 4 reports its device
+type as `mici`, so `ui/mici/onroad/hud_renderer.py` draws the HUD, and it fades the set speed out
+`SET_SPEED_PERSISTENCE = 2.5` s after it last changed. That hid exactly the number the driver
+needs to see. It now also stays up whenever `vCruiseCluster` differs from the car's own
+`cruiseState.speedCluster` by more than 0.5 km/h. Side effect worth knowing: the set speed box
+and the DMoji share the top-left corner (`drawing_top_icons()` gates the DMoji), so the driver
+monitoring face is hidden for as long as a lowered speed is being held.
 
-**Why we stopped.** The only lever would be injecting scroll ticks on bus 1. `0x3C2` is not the
-steering wheel message - it is the whole left switch pack, carrying window switches, seat
-adjustment, mirror tilt and the buckle switch in mux 0. Transmitting there for a convenience
-feature is a different risk class from `DAS_steeringControl`, it needs a new TX permission on a
-bus we never transmit on, our own button and tilt features read the same message, and on Belgian
-roads the car's limit is structurally too low anyway (a sign is void at the next intersection).
-Driver's call: not worth it.
+**Why not injection.** The only way to move the car's *own* set speed would be injecting scroll
+ticks on bus 1. `VCLEFT_swcRightScrollTicks` (0x3C2 mux 1, bit 24, 6 bits signed) carries the
+detent count and the DI does its own arithmetic on it - measured: ticks of 3 and 5 within 0.2 s
+of each step. But `0x3C2` is not the steering wheel message, it is the whole left switch pack,
+carrying window switches, seat adjustment, mirror tilt and the buckle switch in mux 0.
+Transmitting there for a convenience feature is a different risk class from
+`DAS_steeringControl`, it needs a new TX permission on a bus we never transmit on, and our own
+button and tilt features read the same message. Nothing else carries it either: scanning 10 real
+set-speed steps against every address on all three buses found no message whose bytes track the
+set speed, and the statistical front-runners were artifacts (scroll clicks come 0.3 s apart, so
+one unrelated 1 Hz message lands in every window). `DAS_setSpeed`, which we already send in
+`DAS_control` every cycle as `(v_ego + accel)`, is not adopted as the set speed.
 
 **Trap worth remembering:** `cruiseState.speed` comes from `DI_state.DI_digitalSpeed`, which is a
 display field - with cruise off it tracks the current speed, with cruise on it is the set speed.
 Any analysis of "set speed steps" must filter on `cruiseState.enabled` or the mode switches look
 like driver input.
+
+**Reading the pulse back out of a drive.** The temporary `SPEEDLIMITPULSE` line in
+`cruise_ext.py` goes to `cloudlog`, which ends up as `logMessage` events **inside the rlog**, not
+in `/data/log/swaglog.*` - grepping swaglog for it finds nothing even while it is running. The
+device's capnp and zstandard live in `/usr/local/venv/bin/python3`, not in `/usr/bin/python3`.
 
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
