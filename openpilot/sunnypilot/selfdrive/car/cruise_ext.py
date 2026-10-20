@@ -11,6 +11,7 @@ from opendbc.car.structs import car
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
+from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import ACTIVE_STATES as SLA_ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
@@ -143,12 +144,24 @@ class VCruiseHelperSP:
     The car's own set speed is passed in: a change of it can only be the driver's scroll
     wheel, which hands control straight back to them.
     """
-    target_kph = self.speed_limit_pulse.update(CS.cruiseState.enabled,
-                                               CS.cruiseState.speed * CV.MS_TO_KPH,
+    car_set_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+    target_kph = self.speed_limit_pulse.update(CS.cruiseState.enabled, car_set_kph,
                                                self.speed_limit_final_last_kph)
     if target_kph is not None:
       self.v_cruise_kph = float(np.clip(round(target_kph, 1), self.v_cruise_min, V_CRUISE_MAX))
       self.v_cruise_cluster_kph = self.v_cruise_kph
+
+    # temporary: the first road test showed no effect at all while the replay of that same
+    # segment does lower, so log what this actually sees on the car
+    if self.speed_limit_pulse.enabled:
+      self._pulse_log_frame = getattr(self, '_pulse_log_frame', 0) + 1
+      state = (round(car_set_kph), round(self.speed_limit_final_last_kph), CS.cruiseState.enabled,
+               CS.cruiseState.available, round(self.speed_limit_pulse.ceiling_kph),
+               round(self.v_cruise_kph), round(self.v_cruise_min))
+      if state != getattr(self, '_pulse_log_prev', None) or self._pulse_log_frame % 500 == 0:
+        self._pulse_log_prev = state
+        cloudlog.warning("SPEEDLIMITPULSE car_set=%s limit=%s enabled=%s avail=%s ceiling=%s "
+                         "v_cruise=%s v_min=%s target=%s" % (state + (target_kph,)))
 
   def update_speed_limit_assist_v_cruise_non_pcm(self) -> None:
     if self.sla_state in SLA_ACTIVE_STATES and (self.prev_sla_state not in SLA_ACTIVE_STATES or
