@@ -2361,6 +2361,22 @@
           ]
         },
         {
+          "key": "TeslaSpeedLimitPulse",
+          "widget": "toggle",
+          "title": "Follow Read Speed Limit (Alpha)",
+          "description": "When the car reads a new speed limit, openpilot adjusts its own set speed once - it never goes above the speed you set, and it leaves the car's own set speed alone, so the dash and openpilot can read differently. Turning the scroll wheel hands control straight back. Does nothing at 100 km/h and above, like the car does on the motorway. Uses the Speed Limit Offset from Cruise settings. This is an alpha feature. Use at your own risk.",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            },
+            {
+              "type": "capability",
+              "field": "has_longitudinal_control",
+              "equals": true
+            }
+          ]
+        },
+        {
           "key": "TeslaSoftGasThreshold",
           "widget": "toggle",
           "title": "Light Accelerator Keeps Braking (Beta)",

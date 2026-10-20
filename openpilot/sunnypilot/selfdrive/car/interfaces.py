@@ -124,6 +124,7 @@ def initialize_params(params) -> list[dict[str, Any]]:
     "TeslaGapAdjustTilt",
     "TeslaMadsScreenButton",
     "TeslaSimVehicleBusLoss",
+    "TeslaSpeedLimitPulse",
     "TeslaSoftGasThreshold",
     "TeslaSteerOverridePauses",
     "TeslaSteerOverrideResumeDelay",

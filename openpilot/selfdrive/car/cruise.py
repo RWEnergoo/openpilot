@@ -56,6 +56,7 @@ class VCruiseHelper(VCruiseHelperSP):
         self._update_v_cruise_non_pcm(CS, _enabled, is_metric)
         self.update_speed_limit_assist_v_cruise_non_pcm()
         self.v_cruise_cluster_kph = self.v_cruise_kph
+        self.update_speed_limit_pulse_v_cruise(CS)
       else:
         self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
         self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH

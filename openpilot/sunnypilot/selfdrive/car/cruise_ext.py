@@ -14,6 +14,8 @@ from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import ACTIVE_STATES as SLA_ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
+from openpilot.sunnypilot.selfdrive.car.tesla_speed_limit_pulse import SpeedLimitPulse
+from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 
 ButtonType = car.CarState.ButtonEvent.Type
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
@@ -54,6 +56,10 @@ class VCruiseHelperSP:
     self.long_increment = self.params.get("CustomAccLongPressIncrement", return_default=True)
 
     self.enable_button_timers = CRUISE_BUTTON_TIMER
+
+    # Tesla: follow the read speed limit, pulse-triggered (see tesla_speed_limit_pulse.py)
+    self.speed_limit_pulse = SpeedLimitPulse(CP.brand == 'tesla' and
+                                             bool(CP_SP.flags & TeslaFlagsSP.SPEED_LIMIT_PULSE))
 
     # Speed Limit Assist
     self.sla_state = SpeedLimitAssistState.disabled
@@ -129,6 +135,20 @@ class VCruiseHelperSP:
         return True
 
     return False
+
+  def update_speed_limit_pulse_v_cruise(self, CS: car.CarState) -> None:
+    """Tesla: act once on each change of the read limit, never above the driver's set speed.
+
+    speed_limit_final_last_kph already carries the configured offset, so no offset here.
+    The car's own set speed is passed in: a change of it can only be the driver's scroll
+    wheel, which hands control straight back to them.
+    """
+    target_kph = self.speed_limit_pulse.update(CS.cruiseState.enabled,
+                                               CS.cruiseState.speed * CV.MS_TO_KPH,
+                                               self.speed_limit_final_last_kph)
+    if target_kph is not None:
+      self.v_cruise_kph = float(np.clip(round(target_kph, 1), self.v_cruise_min, V_CRUISE_MAX))
+      self.v_cruise_cluster_kph = self.v_cruise_kph
 
   def update_speed_limit_assist_v_cruise_non_pcm(self) -> None:
     if self.sla_state in SLA_ACTIVE_STATES and (self.prev_sla_state not in SLA_ACTIVE_STATES or
