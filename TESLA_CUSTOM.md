@@ -243,6 +243,44 @@ like driver input.
 in `/data/log/swaglog.*` - grepping swaglog for it finds nothing even while it is running. The
 device's capnp and zstandard live in `/usr/local/venv/bin/python3`, not in `/usr/bin/python3`.
 
+## Fixed: a press-only cancel killing the whole non-pcm branch
+
+Found 2026-10-22, while the speed limit pulse worked on some drives and not at all on others -
+all or nothing, for a whole drive at a time. Two defects, one symptom.
+
+**A cancel event that is never released.** `carstate_ext` synthesizes
+`ButtonEvent(pressed=True, type=cancel)` and no matching release. `CRUISE_BUTTON_TIMER` in
+`cruise_ext.py` tracked `cancel`, and `update_manual_button_timers` only clears a timer on a
+`pressed=False` event, so that one press left the timer running forever. `update_enabled_state`
+then kept `enabled_prev` at `False` for the rest of the drive, `cruise.py` took the pcm branch,
+and everything behind `not pcmCruiseSpeed` - the speed limit pulse included - was simply never
+called again. Cancel is now out of that timer: it can never be the engaging button, which is the
+only question those timers answer. The cancel's own disengage path is untouched, because
+`car_events.py` and `mads.py` read `buttonEvents` directly and match on type regardless of
+`pressed`.
+
+**A stray cancel at every cold wake in Park.** The first CAN frames of a drive report
+`gearShifter == unknown`, so the next frame read `unknown -> park` as a shift into Park and
+fired the all-off cancel pulse at t=0.00. Guarded on `unknown` now.
+
+**The measurement that settled it**, per route: first `carParamsSP`, every `cancel` event, and
+the time span of the `SPEEDLIMITPULSE` lines.
+
+```
+00000267  flags=6757  cancel op 0s (park)        pulselog: geen
+00000268  flags=6757  cancel op 798s, 944s       pulselog: 25s .. 793s
+0000026a  flags=6757  cancel op 567s, 820s       pulselog: 172s .. 566s
+0000026b  flags=6757  cancel op 0s (park)        pulselog: geen
+```
+
+The flags are identical on working and dead drives, and every log span ends at the first cancel.
+That pair of facts is what rules out the parameters and points at the gate.
+
+**Worth remembering:** a press-only button event is an abuse of the protocol and it breaks any
+timer-based consumer silently and permanently. There are two of them in this tree
+(`VCruiseHelperSP` and the ICBM controller) and they live in different processes, so the shared
+module-level `CRUISE_BUTTON_TIMER` dict they both alias never actually collides at runtime.
+
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
 merge `sunnypilot/sunnypilot@master` into `tesla-custom` (and rebase the opendbc fork onto the

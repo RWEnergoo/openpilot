@@ -21,9 +21,13 @@ from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 ButtonType = car.CarState.ButtonEvent.Type
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
 
+# These timers answer "is the driver still holding the button that engaged us". Cancel is
+# deliberately absent: it can never be an engaging button, and ports that synthesize a cancel
+# event without a matching release (Tesla does) would leave its timer running forever, which
+# permanently blocks the enabled state below - measured on the road, 2026-10-22.
 CRUISE_BUTTON_TIMER = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0,
                        ButtonType.setCruise: 0, ButtonType.resumeCruise: 0,
-                       ButtonType.cancel: 0, ButtonType.mainCruise: 0}
+                       ButtonType.mainCruise: 0}
 
 V_CRUISE_MIN = 8
 V_CRUISE_MAX = 145
