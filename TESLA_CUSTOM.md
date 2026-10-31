@@ -286,3 +286,17 @@ This branch does **not** track upstream automatically. To pull in new sunnypilot
 merge `sunnypilot/sunnypilot@master` into `tesla-custom` (and rebase the opendbc fork onto the
 newly pinned opendbc commit, re-applying the safety changes), re-run CI, then
 `git push fork tesla-custom tesla-custom:tesla` — the device updater then picks it up.
+
+**Pushing now needs `--no-verify`.** Upstream moved the models to git-lfs hosted on Hugging Face
+(`.lfsconfig` pins both `url` and `pushurl` to `sunnypilot/sunnypilot-lfs`). The lfs pre-push
+hook then tries to upload every object to a repo we cannot write to and the push fails. We never
+add lfs objects of our own and every clone fetches them from that same pinned endpoint, so
+`git push --no-verify fork tesla-custom` is correct, not a shortcut.
+
+**A big merge is mostly Tesla conflicts, and upstream may have solved the same problem.** The
+2026-10-31 merge (157 commits) conflicted in `selfdrived.py` and seven opendbc files. Upstream
+had meanwhile fixed the FSD 14 steering control type properly (#3797), which superseded our own
+EPS 92 workaround - worth checking for before re-applying anything. `safety/modes/tesla.h` was
+restructured onto `msg_matches()`, so take upstream's file and re-apply our three changes (the
+soft gas globals, the 0x118 hysteresis block, safety param SP bit 16) instead of resolving hunk
+by hunk.
