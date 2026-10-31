@@ -90,8 +90,33 @@ New params: `TeslaButtonCancels`, `TeslaSteerOverridePauses`, `TeslaSteerOverrid
 `opendbc/sunnypilot/car/interfaces.py` → `CarParamsSP.flags`).
 
 ## Testing
-- opendbc safety suite + mutation tests: **green** (CI via https://github.com/RWEnergoo/opendbc/pull/1,
-  new tests in `opendbc/safety/tests/test_tesla.py` and `opendbc/safety/tests/mads_common.py`).
+
+**The comma is the test bench.** GitHub Actions on the fork stopped delivering events after
+2026-10-11 - no run of any workflow on any event since, including a push straight to `master`,
+with Actions enabled and the workflow active - so the safety suite runs on the device instead.
+It has gcc, clang and a working python; `libsafety_py` compiles `safety.c` itself with `cc` and
+`-Werror`, so scons is not needed. Work in `/data/tmp` so the installed code is never touched:
+
+```bash
+git clone --depth 1 -b tesla-custom https://github.com/RWEnergoo/opendbc.git /data/tmp/opendbc-test
+/usr/local/venv/bin/python3 -m pip install --target /data/tmp/pylibs gcovr   # once
+export PYTHONPATH=/data/tmp/opendbc-test:/data/tmp/pylibs
+cd /data/tmp/opendbc-test
+SAFETY_COVERAGE=0 /usr/local/venv/bin/python3 -m unittest discover -s opendbc/safety/tests -t .
+rm -f opendbc/safety/tests/libsafety/*.gcda opendbc/safety/tests/libsafety/*.gcno
+SAFETY_COVERAGE=1 /usr/local/venv/bin/python3 -m unittest discover -s opendbc/safety/tests -t .
+cd opendbc/safety/tests && /usr/local/venv/bin/python3 -m gcovr -r /data/tmp/opendbc-test/opendbc/safety/   --gcov-executable gcov -d --fail-under-line=100 -e "^libsafety"
+```
+
+Traps: the device's capnp and zstandard live in `/usr/local/venv/bin/python3`, not
+`/usr/bin/python3`. `python -m venv` fails there on the pip bootstrap but still writes the bin
+symlinks, so a half-built venv runs and reports a handful of import errors that look like test
+failures - install with `--target` instead.
+
+- opendbc safety suite + 100% line coverage, run on the comma 2026-10-31 after the upstream
+  merge: **green**. 9010 tests twice (UBSan round and coverage round), `modes/tesla.h` 193/193,
+  `sunnypilot/mads.h` 113/113, total 2715/2715.
+- Our own tests live in `opendbc/safety/tests/test_tesla.py` and `opendbc/safety/tests/mads_common.py`.
 
 Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 
