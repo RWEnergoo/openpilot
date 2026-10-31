@@ -117,8 +117,9 @@ failures - install with `--target` instead.
 - opendbc safety suite + 100% line coverage, run on the comma 2026-10-31 after the upstream
   merge: **green**. 9010 tests twice (UBSan round and coverage round), `modes/tesla.h` 193/193,
   `sunnypilot/mads.h` 113/113, total 2715/2715.
-- Mutation tests need `tree_sitter` and `tree_sitter_c` on top of the above, same `--target`
-  install, then `python opendbc/safety/tests/mutation.py`.
+- Safety mutation tests, same run: **green**. 3075 mutants, 3075 killed, 0 survived, 0 infra
+  errors, 591 s on the device. They need `tree_sitter` and `tree_sitter_c` on top of the above,
+  same `--target` install, then `python opendbc/safety/tests/mutation.py`.
 - Our own tests live in `opendbc/safety/tests/test_tesla.py` and `opendbc/safety/tests/mads_common.py`.
 
 Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
