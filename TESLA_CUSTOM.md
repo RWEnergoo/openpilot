@@ -281,6 +281,45 @@ timer-based consumer silently and permanently. There are two of them in this tre
 (`VCruiseHelperSP` and the ICBM controller) and they live in different processes, so the shared
 module-level `CRUISE_BUTTON_TIMER` dict they both alias never actually collides at runtime.
 
+## Driver side, and why it is a setting
+
+Found 2026-10-31. Driver monitoring kept falling back to "touch the steering wheel", badly on
+some drives and not at all on others, for a whole drive at a time. Not ours: the diff against
+upstream master across `selfdrive/monitoring/`, `selfdrive/modeld/` and `ui/mici/` was nine
+lines of HUD and nothing else.
+
+**The loop.** `wheelOnRightProb` out of the DM model is not stable in this car - median 0.01 to
+0.03 on good drives, 0.12 to 0.45 on bad ones. When the filtered mean crosses
+`_WHEELPOS_THRESHOLD` (a bare 0.5, no hysteresis) the policy decides the driver sits on the
+right, and `dmonitoringd` then writes that to `IsRhdDetected` every 5 minutes. That saved value
+is what the **next** drive starts on, before its own calibration has run, so openpilot watches
+the empty passenger seat, never finds a face, and falls back to wheel touch until 15 s of
+driving above 11 m/s with a face detected completes the calibration.
+
+Measured, `IsRhdDetected` read straight out of each route's `initData.params`:
+
+```
+00000292  b'0'   start goed, maar eindigt op RHD (57% van de rit)
+00000294  b'1'   vergiftigd door 292 - hersteld na 59 s
+00000296  b'1'   nog steeds - in dit fragment nooit hersteld
+00000298  b'0'   weer goed
+```
+
+Recovery took 59 s, 199 s, and on three routes never.
+
+**The setting.** `DriverSideOverride` (0 auto, 1 left, 2 right), on the device under the driver
+monitoring toggles. Set to left or right, the policy stops guessing entirely and `dmonitoringd`
+stops saving `IsRhdDetected`, so a borderline automatic decision can no longer poison the next
+drive. Auto is the default and is exactly upstream's behaviour.
+
+A hidden threshold guard was the other option. An explicit choice is better: it is honest to
+anyone else running this branch, and the driver always knows the answer.
+
+**Reading it back out of a drive:** `driverMonitoringState` carries `activePolicy`,
+`visionPolicyState.faceDetected`, `wheeltouchFallbackPercent`, `rhdCalibration` and `isRHD`.
+Note that `isRHD` before the first `run_step` is the constructor default, not the saved param -
+reading the param from `initData.params` is the only reliable way to see what a drive started on.
+
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
 merge `sunnypilot/sunnypilot@master` into `tesla-custom` (and rebase the opendbc fork onto the

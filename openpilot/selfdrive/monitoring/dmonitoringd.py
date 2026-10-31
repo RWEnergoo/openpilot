@@ -2,7 +2,7 @@
 import openpilot.cereal.messaging as messaging
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process
-from openpilot.selfdrive.monitoring.policy import DriverMonitoring
+from openpilot.selfdrive.monitoring.policy import DriverMonitoring, DriverSide
 
 
 def dmonitoringd_thread():
@@ -13,7 +13,8 @@ def dmonitoringd_thread():
   sm = messaging.SubMaster(['driverStateV2', 'extrinsicsCalibration', 'carState', 'selfdriveState', 'modelV2',
                             'carControl'], poll='driverStateV2')
 
-  DM = DriverMonitoring(rhd_saved=params.get_bool("IsRhdDetected"), always_on=params.get_bool("AlwaysOnDM"))
+  DM = DriverMonitoring(rhd_saved=params.get_bool("IsRhdDetected"), always_on=params.get_bool("AlwaysOnDM"),
+                        side_override=params.get("DriverSideOverride", return_default=True))
   demo_mode=False
 
   # 20Hz <- dmonitoringmodeld
@@ -36,10 +37,13 @@ def dmonitoringd_thread():
     # load live always-on toggle
     if sm['driverStateV2'].frameId % 40 == 1:
       DM.always_on = params.get_bool("AlwaysOnDM")
+      DM.side_override = params.get("DriverSideOverride", return_default=True)
       demo_mode = params.get_bool("IsDriverViewEnabled")
 
     # save rhd virtual toggle every 5 mins
-    if (sm['driverStateV2'].frameId % 6000 == 0 and not demo_mode and
+    # sunnypilot: never save while the driver has set the side by hand - the saved value is what
+    # the next drive starts on, and a borderline automatic decision would poison it
+    if (sm['driverStateV2'].frameId % 6000 == 0 and not demo_mode and DM.side_override == DriverSide.auto and
      DM.wheelpos_offsetter.filtered_stat.n > DM.settings._WHEELPOS_FILTER_MIN_COUNT and
      DM.wheel_on_right == (DM.wheelpos_offsetter.filtered_stat.M > DM.settings._WHEELPOS_THRESHOLD)):
       params.put_bool("IsRhdDetected", DM.wheel_on_right)

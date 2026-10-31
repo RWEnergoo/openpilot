@@ -4,7 +4,7 @@ from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import log
 from opendbc.car.structs import car
 from openpilot.common.realtime import DT_DMON
-from openpilot.selfdrive.monitoring.policy import DriverMonitoring, DRIVER_MONITOR_SETTINGS
+from openpilot.selfdrive.monitoring.policy import DriverMonitoring, DriverSide, DRIVER_MONITOR_SETTINGS
 
 EventName = log.OnroadEvent.EventName
 dm_settings = DRIVER_MONITOR_SETTINGS()
@@ -279,3 +279,25 @@ class TestRunStepEngagement(OpenpilotTestCase):
     dm.run_step(sm, demo=False)
     assert captured['op_engaged'] == expected_op_engaged
     assert captured['driver_engaged'] == expected_driver_engaged
+
+
+  # sunnypilot: DriverSideOverride. wheelOnRightProb can drift over the threshold on a drive,
+  # dmonitoringd then saves IsRhdDetected, and every later drive starts watching the empty
+  # passenger seat until the 15s calibration completes. Measured on routes 00000294 and 00000296.
+  def test_driver_side_override(self):
+    # automatic, with a saved RHD default: starts on the wrong seat and finds no face
+    DM = DriverMonitoring(rhd_saved=True)
+    DM._update_states(msg_ATTENTIVE, [0, 0, 0], 0, True, False)
+    assert DM.wheel_on_right
+    assert not DM.face_detected
+
+    # telling it the driver sits on the left overrides that, saved value or not
+    DM = DriverMonitoring(rhd_saved=True, side_override=DriverSide.left)
+    DM._update_states(msg_ATTENTIVE, [0, 0, 0], 0, True, False)
+    assert not DM.wheel_on_right
+    assert DM.face_detected
+
+    # and it holds the other way round too
+    DM = DriverMonitoring(rhd_saved=False, side_override=DriverSide.right)
+    DM._update_states(msg_ATTENTIVE, [0, 0, 0], 0, True, False)
+    assert DM.wheel_on_right

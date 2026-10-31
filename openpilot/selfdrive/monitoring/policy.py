@@ -128,8 +128,15 @@ def face_orientation_from_model(orient_model, pos_model, rpy_calib):
   return pitch, yaw
 
 
+class DriverSide:
+  """sunnypilot: DriverSideOverride - which seat the driver told us they are in."""
+  auto = 0
+  left = 1
+  right = 2
+
+
 class DriverMonitoring:
-  def __init__(self, rhd_saved=False, settings=None, always_on=False):
+  def __init__(self, rhd_saved=False, settings=None, always_on=False, side_override=DriverSide.auto):
     # init policy settings
     self.settings = settings if settings is not None else DRIVER_MONITOR_SETTINGS()
 
@@ -149,6 +156,7 @@ class DriverMonitoring:
     self.wheel_on_right = False
     self.wheel_on_right_last = None
     self.wheel_on_right_default = rhd_saved
+    self.side_override = side_override
     self.face_detected = False
     self.alert_3_cnt = 0
     self.cnt_since_alert_3 = 0
@@ -253,7 +261,12 @@ class DriverMonitoring:
 
     wheelpos_calibrated = self.wheelpos_offsetter.filtered_stat.n >= self.settings._WHEELPOS_FILTER_MIN_COUNT
 
-    if wheelpos_calibrated or demo_mode:
+    if self.side_override != DriverSide.auto:
+      # sunnypilot: the driver told us which seat they are in, so never guess. Left in automatic,
+      # wheelOnRightProb can drift over the threshold, and the wrong side means no face is found
+      # at all and monitoring falls back to steering wheel touches for the rest of the drive.
+      self.wheel_on_right = self.side_override == DriverSide.right
+    elif wheelpos_calibrated or demo_mode:
       self.wheel_on_right = self.wheelpos_offsetter.filtered_stat.M > self.settings._WHEELPOS_THRESHOLD
     else:
       self.wheel_on_right = self.wheel_on_right_default # use default/saved if calibration is unfinished

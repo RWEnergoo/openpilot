@@ -33,6 +33,10 @@ DESCRIPTIONS = {
     "without a turn signal activated while driving over 31 mph (50 km/h)."
   ),
   "AlwaysOnDM": tr_noop("Enable driver monitoring even when sunnypilot is not engaged."),
+  "DriverSideOverride": tr_noop(
+    "Which seat you drive from. Automatic lets the driver monitor work it out from the camera. If it picks the wrong side it "
+    "sees no face at all and asks for steering wheel touches instead, so set your side here if that happens."
+  ),
   'RecordFront': tr_noop("Upload data from the driver facing camera and help improve the driver monitoring algorithm."),
   "IsMetric": tr_noop("Display speed in km/h instead of mph."),
   "RecordAudio": tr_noop("Record and store microphone audio while driving. The audio will be included in the dashcam video in comma connect."),
@@ -100,6 +104,16 @@ class TogglesLayout(Widget):
       icon="speed_limit.png"
     )
 
+    self._driver_side_setting = multiple_button_item(
+      lambda: tr("Driver Side"),
+      lambda: tr(DESCRIPTIONS["DriverSideOverride"]),
+      buttons=[lambda: tr("Automatic"), lambda: tr("Left"), lambda: tr("Right")],
+      button_width=300,
+      callback=self._set_driver_side,
+      selected_index=self._params.get("DriverSideOverride", return_default=True),
+      icon="monitoring.png"
+    )
+
     self._toggles = {}
     self._initial_cruise_speed = ListItem(
       title=lambda: tr("Initial Max Speed"),
@@ -141,6 +155,10 @@ class TogglesLayout(Widget):
       if param == "DisengageOnAccelerator":
         self._toggles["LongitudinalPersonality"] = self._long_personality_setting
         self._toggles["InitialCruiseSpeedKph"] = self._initial_cruise_speed
+
+      # keep the driver side next to the driver monitoring toggle it belongs to
+      if param == "AlwaysOnDM":
+        self._toggles["DriverSideOverride"] = self._driver_side_setting
 
     self._scroller = Scroller(list(self._toggles.values()), line_separator=True, spacing=0)
 
@@ -188,3 +206,6 @@ class TogglesLayout(Widget):
 
   def _set_longitudinal_personality(self, button_index: int):
     self._params.put("LongitudinalPersonality", button_index, block=True)
+
+  def _set_driver_side(self, button_index: int):
+    self._params.put("DriverSideOverride", button_index, block=True)
