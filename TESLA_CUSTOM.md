@@ -402,6 +402,41 @@ key - that needs the tree-wide check against `params_keys.h`.
 **The rule this leaves:** after an upstream merge, our code living inside an upstream file is the
 risky part, not the conflicts git shows you. Walk every attribute it touches.
 
+## Fixed: the wheel being yanked to centre after a gear change
+
+2026-11-03. Shifting out of reverse sometimes slammed the wheel toward centre, harder than
+openpilot ever actuates and regardless of where the wheel stood. Those three facts rule out our
+angle request: openpilot steers to a *requested angle* and has no notion of "centre", and the
+force it asks for is bounded. It is the EPS, reacting to us asking for steering at the wrong
+moment.
+
+Measured live on the car, at the shift:
+
+```
+73.0 reverse  latActive False  cmd -310.6  actual -310.4
+73.0 drive    latActive False  cmd -310.6  actual -310.4
+73.0 drive    latActive True   cmd -311.9  actual -310.2
+```
+
+Lateral comes back in the same tenth of a second as the shift, through no gate at all.
+`SteerOverridePause` wipes its state after `RESET_AFTER_INACTIVE_FRAMES` (5 s) of lateral-off,
+and a reverse manoeuvre is always longer than that, so whatever pause the parking manoeuvre
+built up is gone by the time you select drive. **That is also why it is intermittent**: a
+reverse short enough to stay under 5 s keeps the pause, and then there is no jolt.
+
+`GearChangeSettle` holds lateral off for 1 s after *any* gear change, so the EPS settles before
+we ask again. Deliberately not conditional on the gear being reverse: every shift hands the EPS
+back and forth.
+
+**Reading signals live beats digging through rlogs** when the driver is sitting in the car.
+`/data/live.py` subscribes to `carState` and `carControl` and prints a line per change: gear,
+vEgo, latActive, the angle we command, the actual angle, torque and steeringPressed. Run it with
+`PYTHONPATH=/data/openpilot /usr/local/venv/bin/python3 /data/live.py <seconds>`.
+
+**Trap:** a gear timeline is not what you expect. Parking logs `drive -> reverse -> park`, and
+the reverse-to-drive happens at the *start* of a route where the log already opens in `drive`.
+Scanning finished routes for an `R -> D` pair finds nothing.
+
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
 merge `sunnypilot/sunnypilot@master` into `tesla-custom` (and rebase the opendbc fork onto the
