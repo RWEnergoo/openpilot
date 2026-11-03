@@ -135,6 +135,8 @@ Road test status (Model 3 Highland HW4, comma 4, WITH vehicle bus):
 | Upstream merge (423 + 135 commits, `openpilot/` package restructure, fork flags renumbered off upstream's MADS screen-button bits) | ✅ validated on the road |
 | Soft gas threshold + proportional brake blend (20% window, 17.2% release) | ✅ **Stable** — two long drives actively trying to provoke it after the hysteresis fix; the on/off point is audible and feels right, no difference in driving behaviour, re-engages cleanly on release |
 | Speed limit pulse (ceiling = scroll wheel, acts on a sign change, nothing above 100) | ✅ confirmed lowering on the road; the 2 s settling window stops it overriding the driver's set speed at engage |
+| Speed limit margin | ✅ fixed +5 km/h confirmed on the road. No code needed: the resolver already adds the configured *Speed Limit Offset* into `speedLimitFinalLast`, which is what the pulse reads |
+| Tesla tilt gesture, one meaning per direction | ✅ left = one step more relaxed, right = one step more aggressive, hold length no longer matters |
 | Driver side override (auto / left / right) | ✅ set to left after the automatic decision kept flipping to RHD and knocking monitoring back to wheel touch |
 | Upstream merge (157 commits, Experimental Mode removed upstream, FSD 14 steering control type swapped) | ✅ validated on the road after two crash fixes in the tilt handling |
 | Tesla tilt gestures after that merge | ✅ short press still steps the following distance; the Experimental Mode hold is gone because the feature is gone upstream |
