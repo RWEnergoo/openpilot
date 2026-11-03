@@ -34,7 +34,7 @@ DESCRIPTIONS = {
   ),
   "AlwaysOnDM": tr_noop("Enable driver monitoring even when sunnypilot is not engaged."),
   "DriverSideOverride": tr_noop(
-    "Which seat you drive from. Automatic lets the driver monitor work it out from the camera. If it picks the wrong side it "
+    "Which seat you drive from. Automatic lets the driver monitor work it out from the camera. If it picks the wrong side it " +
     "sees no face at all and asks for steering wheel touches instead, so set your side here if that happens."
   ),
   'RecordFront': tr_noop("Upload data from the driver facing camera and help improve the driver monitoring algorithm."),

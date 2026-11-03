@@ -349,6 +349,37 @@ anyone else running this branch, and the driver always knows the answer.
 Note that `isRHD` before the first `run_step` is the constructor default, not the saved param -
 reading the param from `initData.params` is the only reliable way to see what a drive started on.
 
+## Fixed: the tilt gesture crashing on Experimental Mode
+
+2026-11-03, found by the driver: "de crash lijkt te gebeuren wanneer ik van experimental mode
+wissel". Straight from the device's own swaglog:
+
+```
+update_tesla_tilt_holds
+    if new_mode != self.experimental_mode:
+AttributeError: 'SelfdriveD' object has no attribute 'experimental_mode'
+```
+
+The 157-commit merge removed upstream's own Experimental Mode handling from `selfdrived`
+(`exp_button.py` and `exp_mode_button.py` are gone with it), and `SelfdriveD.experimental_mode`
+went with it. Our tilt gesture still read it, so completing a hold - the gesture that switches
+Experimental Mode - killed selfdrived. It now reads the param, which is what the gesture writes
+to anyway and only runs on a completed hold.
+
+**Why nothing caught it, and what does now.** The whole opendbc gate was green (9010 safety
+tests, 100% line coverage, 3075/3075 mutants) and says nothing about this: it only covers the
+panda safety C. `ruff` does not look at attributes. `ty check` passes on the broken line - this
+was tested, not assumed. The conflict itself was invisible, because git quietly took upstream's
+side for the `class SelfdriveD:` line.
+
+What does catch it is `openpilot/sunnypilot/selfdrive/selfdrived/tests/test_tesla_tilt_attrs.py`:
+it parses `selfdrived.py` and fails if any `self.<attr>` our own methods read is never assigned
+in the class. Verified to fail on the broken line and pass on the fixed one. Add any further
+method of ours in that file to `OUR_METHODS`.
+
+**The rule this leaves:** after an upstream merge, our code living inside an upstream file is the
+risky part, not the conflicts git shows you. Walk every attribute it touches.
+
 ## Updating from upstream sunnypilot
 This branch does **not** track upstream automatically. To pull in new sunnypilot master:
 merge `sunnypilot/sunnypilot@master` into `tesla-custom` (and rebase the opendbc fork onto the
