@@ -19,8 +19,8 @@ import pathlib
 
 SELFDRIVED = pathlib.Path(__file__).parents[4] / "selfdrive" / "selfdrived" / "selfdrived.py"
 
-# the methods we own and maintain in that upstream file
-OUR_METHODS = ("update_tesla_tilt_holds",)
+# the methods holding code we own and maintain inside that upstream file
+OUR_METHODS = ("update_events",)
 
 
 def _class_node(tree, name):

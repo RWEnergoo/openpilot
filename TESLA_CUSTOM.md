@@ -363,8 +363,23 @@ AttributeError: 'SelfdriveD' object has no attribute 'experimental_mode'
 The 157-commit merge removed upstream's own Experimental Mode handling from `selfdrived`
 (`exp_button.py` and `exp_mode_button.py` are gone with it), and `SelfdriveD.experimental_mode`
 went with it. Our tilt gesture still read it, so completing a hold - the gesture that switches
-Experimental Mode - killed selfdrived. It now reads the param, which is what the gesture writes
-to anyway and only runs on a completed hold.
+Experimental Mode - killed selfdrived.
+
+Reading the param instead was only half the story and crashed again, differently:
+
+```
+openpilot.common.params.UnknownKeyName: b'ExperimentalMode'
+```
+
+**Experimental Mode is gone as a concept**, not just as an attribute. The key is no longer in
+`params_keys.h`, the longitudinal planner never mentions it, and after the fix the only two
+references left in the whole tree were our own. So the 0.5 s tilt hold had nothing left to
+control and it is removed: no invented replacement, because any remap would be a different
+feature wearing the old gesture's name. **The short tilt press still steps the following
+distance**, which is the half in daily use. One behaviour change falls out of this: a long hold
+now simply steps the following distance on release, since nothing suppresses it any more.
+
+A tree-wide check for reads of params that no longer exist found nothing else.
 
 **Why nothing caught it, and what does now.** The whole opendbc gate was green (9010 safety
 tests, 100% line coverage, 3075/3075 mutants) and says nothing about this: it only covers the
@@ -373,9 +388,10 @@ was tested, not assumed. The conflict itself was invisible, because git quietly 
 side for the `class SelfdriveD:` line.
 
 What does catch it is `openpilot/sunnypilot/selfdrive/selfdrived/tests/test_tesla_tilt_attrs.py`:
-it parses `selfdrived.py` and fails if any `self.<attr>` our own methods read is never assigned
-in the class. Verified to fail on the broken line and pass on the fixed one. Add any further
-method of ours in that file to `OUR_METHODS`.
+it parses `selfdrived.py` and fails if any `self.<attr>` read in the methods that carry our code
+is never assigned in the class. Verified both ways, on the real bug and on a planted one. Add
+any further method carrying our code to `OUR_METHODS`. It does **not** catch a missing *param*
+key - that needs the tree-wide check against `params_keys.h`.
 
 **The rule this leaves:** after an upstream merge, our code living inside an upstream file is the
 risky part, not the conflicts git shows you. Walk every attribute it touches.

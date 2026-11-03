@@ -54,10 +54,6 @@ TurnDirection = custom.ModelDataV2SP.TurnDirection
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
-# sunnypilot: hold length for the Tesla tilt gestures below. Upstream dropped CruiseHelper,
-# which used to own this constant, together with its distance-button Experimental Mode toggle.
-DISTANCE_LONG_PRESS = 50
-
 
 class SelfdriveD:
   def __init__(self, CP=None, CP_SP=None):
@@ -86,8 +82,6 @@ class SelfdriveD:
     self.tesla_steer_override_pauses = self.CP.brand == 'tesla' and bool(self.CP_SP.flags & TeslaFlagsSP.STEER_OVERRIDE_PAUSES)
     # sunnypilot: Tesla directional following distance via right wheel tilt
     self.tesla_gap_adjust_tilt = self.CP.brand == 'tesla' and bool(self.CP_SP.flags & TeslaFlagsSP.GAP_ADJUST_TILT)
-    self.tesla_tilt_hold_frames = {ButtonType.gapAdjustCruise: 0, ButtonType.altButton2: 0}
-    self.experimental_mode_switched = False
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -529,10 +523,9 @@ class SelfdriveD:
       self.events.remove(EventName.canBusMissing)
 
     if self.tesla_gap_adjust_tilt:
-      # sunnypilot: deterministic tilt holds for Experimental Mode - the comma 4 layout has no
-      # persistent mode icon, so the gesture itself must define the state: hold right tilt = ON,
-      # hold left tilt = OFF
-      self.update_tesla_tilt_holds(CS)
+      # NOTE: ICBM has been called from inside the tilt handling since that feature was added, so
+      # it only runs with this flag on. Kept identical here on purpose; untangle separately.
+      self.icbm.run(CS, self.sm['carControl'], self.sm['longitudinalPlanSP'], self.is_metric)
 
     # Decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
@@ -546,54 +539,15 @@ class SelfdriveD:
         elif any(not be.pressed and be.type == ButtonType.altButton2 for be in CS.buttonEvents):
           step = -1
         if step != 0:
-          if not self.experimental_mode_switched:
-            new_personality = max(0, min(2, self.personality + step))
-            if new_personality != self.personality:
-              self.personality = new_personality
-              self.params.put('LongitudinalPersonality', self.personality)
-              self.events.add(EventName.personalityChanged)
-          self.experimental_mode_switched = False
+          new_personality = max(0, min(2, self.personality + step))
+          if new_personality != self.personality:
+            self.personality = new_personality
+            self.params.put('LongitudinalPersonality', self.personality)
+            self.events.add(EventName.personalityChanged)
       elif any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
         self.personality = (self.personality - 1) % 3
         self.params.put('LongitudinalPersonality', self.personality)
         self.events.add(EventName.personalityChanged)
-
-  def update_tesla_tilt_holds(self, CS):
-    # sunnypilot: hold right tilt (gapAdjustCruise) 0.5s = Experimental Mode ON,
-    # hold left tilt (altButton2) 0.5s = OFF. Deterministic set instead of a toggle.
-    if not (self.CP.openpilotLongitudinalControl and CS.cruiseState.available):
-      for button in self.tesla_tilt_hold_frames:
-        self.tesla_tilt_hold_frames[button] = 0
-      return
-
-    for button in self.tesla_tilt_hold_frames:
-      if self.tesla_tilt_hold_frames[button] > 0:
-        self.tesla_tilt_hold_frames[button] += 1
-
-    for button_event in CS.buttonEvents:
-      button = button_event.type.raw
-      if button in self.tesla_tilt_hold_frames:
-        self.tesla_tilt_hold_frames[button] = int(button_event.pressed)
-
-    if not self.experimental_mode_switched:
-      # NOTE: altButton2 is the PHYSICAL RIGHT tilt (the tilt->signal mapping in carstate_ext
-      # is swapped to get right = more aggressive following distance). Experimental Mode keeps
-      # the natural switch convention independently of that: right = ON, left = OFF.
-      new_mode = None
-      if self.tesla_tilt_hold_frames[ButtonType.altButton2] >= DISTANCE_LONG_PRESS:
-        new_mode = True
-      elif self.tesla_tilt_hold_frames[ButtonType.gapAdjustCruise] >= DISTANCE_LONG_PRESS:
-        new_mode = False
-
-      if new_mode is not None:
-        # upstream dropped SelfdriveD.experimental_mode along with its own Experimental Mode
-        # handling, so read the param instead. This only runs when a tilt hold completes.
-        if new_mode != self.params.get_bool("ExperimentalMode"):
-          self.params.put_bool("ExperimentalMode", new_mode)
-          self.events_sp.add(custom.OnroadEventSP.EventName.experimentalModeSwitched)
-        self.experimental_mode_switched = True
-
-    self.icbm.run(CS, self.sm['carControl'], self.sm['longitudinalPlanSP'], self.is_metric)
 
   def data_sample(self):
     _car_state = messaging.recv_one(self.car_state_sock)
