@@ -586,7 +586,9 @@ class SelfdriveD:
         new_mode = False
 
       if new_mode is not None:
-        if new_mode != self.experimental_mode:
+        # upstream dropped SelfdriveD.experimental_mode along with its own Experimental Mode
+        # handling, so read the param instead. This only runs when a tilt hold completes.
+        if new_mode != self.params.get_bool("ExperimentalMode"):
           self.params.put_bool("ExperimentalMode", new_mode)
           self.events_sp.add(custom.OnroadEventSP.EventName.experimentalModeSwitched)
         self.experimental_mode_switched = True
